@@ -1,0 +1,6 @@
+[submodule "models/VisionZip"]
+	path = models/VisionZip
+	url = https://github.com/dvlab-research/VisionZip.git
+[submodule "models/SparseVLMs"]
+	path = models/SparseVLMs
+	url = https://github.com/Gumpest/SparseVLMs.git
