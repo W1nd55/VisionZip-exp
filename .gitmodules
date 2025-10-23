@@ -4,3 +4,6 @@
 [submodule "models/SparseVLMs"]
 	path = models/SparseVLMs
 	url = https://github.com/Gumpest/SparseVLMs.git
+[submodule "models/LLaVA"]
+	path = models/LLaVA
+	url = https://github.com/haotian-liu/LLaVA.git
