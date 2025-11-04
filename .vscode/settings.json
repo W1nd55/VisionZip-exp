@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "/afs/cs.wisc.edu/u/q/i/qinxinghao/project/VisionZip-exp/models/LLaVA",
+        "/afs/cs.wisc.edu/u/q/i/qinxinghao/project/VisionZip-exp/models/VisionZip"
+    ],
+    "python.defaultInterpreterPath": "/afs/cs.wisc.edu/u/q/i/qinxinghao/miniconda3/envs/visionzip/bin/python" 
+}
