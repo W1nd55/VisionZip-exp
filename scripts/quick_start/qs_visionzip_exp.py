@@ -7,7 +7,6 @@ project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-
 from llava.model.builder import load_pretrained_model
 from llava.mm_utils import get_model_name_from_path
 from llava.eval.run_llava import eval_model
@@ -36,7 +35,7 @@ tokenizer, model, image_processor, context_len = load_pretrained_model(
 model = visionzip(model, dominant=54, contextual=10)
 
 ## Inference
-image_file = "/u/q/i/qinxinghao/project/VisionZip-exp/reference/owl.JPEG"
+image_file = "/home/w1nd519994824/VisionZip-exp/reference/owl.JPEG"
 prompt = "Describe the image in detail"
 
 image = Image.open(image_file).convert('RGB')

@@ -28,7 +28,7 @@ tokenizer, model, image_processor, context_len = load_pretrained_model(
 model = visionzip(model, dominant=54, contextual=10)
 
 ## Inference
-image_file = "/u/q/i/qinxinghao/project/VisionZip-exp/reference/owl.JPEG"
+image_file = "/home/w1nd519994824/VisionZip-exp/reference/owl.JPEG"
 prompt = "Describe the image in detail"
 
 image = Image.open(image_file).convert('RGB')
