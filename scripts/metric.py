@@ -3,19 +3,24 @@ import math
 from typing import List, Dict, Any, Optional
 from scripts.abstract import BaseMetric, Sample
 from collections import defaultdict
+import re
+
+_YESNO_RE = re.compile(r"\b(yes|no)\b", flags=re.IGNORECASE)
 
 # ================= #
 # Metric Implement  #
 # ================= #
 
+# def _normalize_text(s: str) -> str:
+#     s = s.lower().strip()
+#     table = str.maketrans('', '', string.punctuation)
+#     s = s.translate(table)
+#     s = " ".join(s.split())
+#     for art in [" a ", " an ", " the "]:
+#         s = s.replace(art, " ")
+#     return s.strip()
 def _normalize_text(s: str) -> str:
-    s = s.lower().strip()
-    table = str.maketrans('', '', string.punctuation)
-    s = s.translate(table)
-    s = " ".join(s.split())
-    for art in [" a ", " an ", " the "]:
-        s = s.replace(art, " ")
-    return s.strip()
+    return (s or "").strip().lower()
 
 def percentile(arr: List[float], p: float) -> float:
     arr = sorted(arr)
@@ -88,15 +93,22 @@ class DelayStats(BaseMetric):
             out["decode_tok_per_s"] = toks / (decode_ms/1000.0 + 1e-9)
         return out
     
-def _yn(s: str) -> Optional[str]:
-    t = _normalize_text(s)
-    if t.startswith("yes"): return "yes"
-    if t.startswith("no"):  return "no"
-    # Error tolerance: check for independent yes/no within the sentence
-    toks = t.replace(".", " ").split()
-    if "yes" in toks: return "yes"
-    if "no"  in toks: return "no"
-    return None
+# def _yn(s: str) -> Optional[str]:
+#     t = _normalize_text(s)
+#     if t.startswith("yes"): return "yes"
+#     if t.startswith("no"):  return "no"
+#     # Error tolerance: check for independent yes/no within the sentence
+#     toks = t.replace(".", " ").split()
+#     if "yes" in toks: return "yes"
+#     if "no"  in toks: return "no"
+#     return None
+def _yn(s: str):
+    if not s:
+        return None
+    m = _YESNO_RE.search(s)
+    if not m:
+        return None
+    return m.group(1).lower()
 
 class MMEAcc(BaseMetric):
     """Per-question accuracy (ACC)"""

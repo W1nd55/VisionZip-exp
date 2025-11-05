@@ -39,9 +39,34 @@ class LlavaVisionZipModel(BaseModel):
             print("[Warn] EXP forward not found or failed to patch:", e)
 
         # ---- load model ----
-        tokenizer, model, image_processor, _ = load_pretrained_model(
-            model_path=model_path, model_base=None, model_name=get_model_name_from_path(model_path)
-        )
+        extra_kwargs = {
+            "device_map": "auto",
+            "torch_dtype": torch.float16,
+        }
+        # 优先 4bit；不行就回退 8bit；再不行就 fp16
+        for k, v in [
+            ({"load_4bit": True,
+            "bnb_4bit_compute_dtype": torch.float16,
+            "bnb_4bit_quant_type": "nf4"}, "4bit"),
+            ({"load_8bit": True}, "8bit"),
+            ({}, "fp16")
+        ]:
+            try:
+                kwargs = extra_kwargs | k
+                tokenizer, model, image_processor, _ = load_pretrained_model(
+                    model_path=model_path,
+                    model_base=None,
+                    model_name=get_model_name_from_path(model_path),
+                    **kwargs
+                )
+                print(f"[load] success with {v}")
+                break
+            except Exception as e:
+                print(f"[load] try {v} failed:", e)
+                continue
+        # tokenizer, model, image_processor, _ = load_pretrained_model(
+        #     model_path=model_path, model_base=None, model_name=get_model_name_from_path(model_path)
+        # )
         # apply VisionZip wrapper
         from visionzip import visionzip as _visionzip
         model = _visionzip(model, dominant=dominant, contextual=contextual)
@@ -133,13 +158,26 @@ class LlavaVisionZipModel(BaseModel):
 
         text = self.tokenizer.decode(out_ids[0], skip_special_tokens=True).strip()
 
+        # timings_ms = {
+        #     "load_ms": inputs.get("load_ms", 0.0),
+        #     "preprocess_ms": inputs.get("preprocess_ms", 0.0),
+        #     "prefill_ms": timer.result_ms("prefill"),
+        #     # Ensure decode_ms is non-negative
+        #     "decode_ms": max(timer.result_ms("end2end") - timer.result_ms("prefill"), 0.0), 
+        #     "end2end_ms": timer.result_ms("end2end"),
+        # }
+        try:
+            num_new_tokens = len(self.tokenizer(text, add_special_tokens=False).input_ids)
+        except Exception:
+            num_new_tokens = 0
+
         timings_ms = {
             "load_ms": inputs.get("load_ms", 0.0),
             "preprocess_ms": inputs.get("preprocess_ms", 0.0),
             "prefill_ms": timer.result_ms("prefill"),
-            # Ensure decode_ms is non-negative
-            "decode_ms": max(timer.result_ms("end2end") - timer.result_ms("prefill"), 0.0), 
+            "decode_ms": max(timer.result_ms("end2end") - timer.result_ms("prefill"), 0.0),
             "end2end_ms": timer.result_ms("end2end"),
+            "num_new_tokens": int(num_new_tokens),
         }
         # Estimate the number of generated tokens (excluding prompt)
         try:
@@ -181,14 +219,13 @@ if __name__ == "__main__":
     # dataset = VQAv2Dataset(args.ann_path, limit=args.limit)
     if args.dataset == "vqa":
         from scripts.dataset import VQAv2Dataset
-        from scripts.metric import ExactMatch, VQASoftAcc, DelayStats
+        from scripts.metric import ExactMatch, VQASoftAcc
         dataset = VQAv2Dataset(args.ann_path, limit=args.limit)
         metrics = [ExactMatch(), VQASoftAcc(), DelayStats()]
-    else:  # mme
-        from scripts.metric import DelayStats, MMEAcc, MMEAccPlus
+    else:  # MME
         from scripts.dataset import MMEDataset
+        from scripts.metric import MMEAcc, MMEAccPlus
         dataset = MMEDataset(args.ann_path, limit=args.limit)
         metrics = [MMEAcc(), MMEAccPlus(), DelayStats()]
-    metrics = [ExactMatch(), VQASoftAcc(), DelayStats()]
     evaluator = Evaluator(model, dataset, metrics, output_dir=args.output_dir, warmup=args.warmup, seed=args.seed)
     evaluator.run(limit=args.limit)
