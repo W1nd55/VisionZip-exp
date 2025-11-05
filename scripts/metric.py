@@ -1,7 +1,8 @@
 import string
 import math
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from scripts.abstract import BaseMetric, Sample
+from collections import defaultdict
 
 # ================= #
 # Metric Implement  #
@@ -86,3 +87,46 @@ class DelayStats(BaseMetric):
             decode_ms = sum(x.get('decode_ms', 0.0) for x in self.logs)
             out["decode_tok_per_s"] = toks / (decode_ms/1000.0 + 1e-9)
         return out
+    
+def _yn(s: str) -> Optional[str]:
+    t = _normalize_text(s)
+    if t.startswith("yes"): return "yes"
+    if t.startswith("no"):  return "no"
+    # Error tolerance: check for independent yes/no within the sentence
+    toks = t.replace(".", " ").split()
+    if "yes" in toks: return "yes"
+    if "no"  in toks: return "no"
+    return None
+
+class MMEAcc(BaseMetric):
+    """Per-question accuracy (ACC)"""
+    def __init__(self):
+        self.n = 0
+        self.c = 0
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        gold = _normalize_text(sample.answers[0]) if sample.answers else None
+        if gold not in ("yes","no"):
+            return
+        pred = _yn(pred_text)
+        self.n += 1
+        if pred == gold:
+            self.c += 1
+    def compute(self) -> Dict[str, Any]:
+        return {"mme_acc": self.c / self.n if self.n else 0.0, "mme_count_q": self.n}
+
+class MMEAccPlus(BaseMetric):
+    """Per-image paired accuracy (ACC+): counts 1 only if both positive and negative questions for the same image_id are correct."""
+    def __init__(self):
+        self.pairs = defaultdict(lambda: {"pos": None, "neg": None})
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        if not sample.meta or "image_id" not in sample.meta:
+            return
+        iid = sample.meta["image_id"]
+        which = sample.meta.get("pair")  # 'pos' or 'neg'
+        gold = _normalize_text(sample.answers[0]) if sample.answers else None
+        pred = _yn(pred_text)
+        self.pairs[iid][which] = (pred == gold) if gold in ("yes","no") else False
+    def compute(self) -> Dict[str, Any]:
+        n_img = len(self.pairs)
+        both_true = sum(1 for v in self.pairs.values() if v["pos"] is True and v["neg"] is True)
+        return {"mme_acc_plus": (both_true / n_img) if n_img else 0.0, "mme_count_img": n_img}

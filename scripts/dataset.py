@@ -37,3 +37,52 @@ class VQAv2Dataset(BaseDataset):
                 answers=x.get("answers", None),
                 meta=None
             )
+
+
+class MMEDataset(BaseDataset):
+    """
+    ann_json structure (each entry represents two questions, positive and negative, for one image):
+    [
+      {
+        "image_id": "0006adf999ccc899",
+        "image_path": ".../landmark/0006adf999ccc899.jpg",
+        "q_pos": "Is this a photo of Cotehele? Please answer yes or no.",
+        "a_pos": "yes",
+        "q_neg": "Is this a photo of Mozirje Grove? Please answer yes or no.",
+        "a_neg": "no"
+      },
+      ...
+    ]
+    During evaluation, this expands into two Samples (pos/neg). MMEAccPlus will aggregate 
+    results by 'image_id' to calculate ACC+.
+    """
+    def __init__(self, ann_path: str, limit: Optional[int] = None):
+        with open(ann_path, "r") as f:
+            data = json.load(f)
+        if limit is not None:
+            data = data[:limit]
+        self._samples: List[Sample] = []
+        for it in data:
+            iid = str(it["image_id"])
+            img = it["image_path"]
+            self._samples.append(Sample(
+                qid=iid + "_pos",
+                image_path=img,
+                prompt=it["q_pos"],
+                answers=[(it.get("a_pos") or "yes").lower()],
+                meta={"image_id": iid, "pair": "pos", "subtask": it.get("subtask")}
+            ))
+            self._samples.append(Sample(
+                qid=iid + "_neg",
+                image_path=img,
+                prompt=it["q_neg"],
+                answers=[(it.get("a_neg") or "no").lower()],
+                meta={"image_id": iid, "pair": "neg", "subtask": it.get("subtask")}
+            ))
+
+    def __len__(self) -> int:
+        return len(self._samples)
+
+    def __iter__(self) -> Iterable[Sample]:
+        for s in self._samples:
+            yield s

@@ -110,14 +110,23 @@ class LlavaVisionZipModel(BaseModel):
         # For finer granularity, we could use `stopping_criteria` and step-by-step decode loops.
         timer.start("end2end")
         timer.start("prefill")  # Approximation: treat the first forward pass as prefill
-        out_ids = self.model.generate(
-            inputs["input_ids"],
+        # Decide greedy vs sampling based on temperature
+        do_sample = (self.temperature is not None and self.temperature > 0.0)
+
+        gen_kwargs = dict(
+            inputs=inputs["input_ids"],
             images=inputs["images"],
-            do_sample=True,
-            temperature=self.temperature,
             max_new_tokens=self.max_new_tokens,
             use_cache=True,
         )
+
+        if do_sample:
+            gen_kwargs.update(dict(do_sample=True, temperature=float(self.temperature)))
+        else:
+            # Greedy: do_sample=False; do NOT pass temperature
+            gen_kwargs.update(dict(do_sample=False))
+
+        out_ids = self.model.generate(**gen_kwargs)
         # We can only precisely get end2end; prefill/decoding use approximate splitting (can be replaced with token-by-token decoding)
         timer.end("prefill")
         timer.end("end2end")
@@ -158,6 +167,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_new_tokens", type=int, default=256)
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--dataset", type=str, default="vqa", choices=["vqa", "mme"],
+                    help="datatset options")
     args = parser.parse_args()
 
     model = LlavaVisionZipModel(
@@ -167,7 +178,17 @@ if __name__ == "__main__":
         temperature=args.temperature,
         max_new_tokens=args.max_new_tokens
     )
-    dataset = VQAv2Dataset(args.ann_path, limit=args.limit)
+    # dataset = VQAv2Dataset(args.ann_path, limit=args.limit)
+    if args.dataset == "vqa":
+        from scripts.dataset import VQAv2Dataset
+        from scripts.metric import ExactMatch, VQASoftAcc, DelayStats
+        dataset = VQAv2Dataset(args.ann_path, limit=args.limit)
+        metrics = [ExactMatch(), VQASoftAcc(), DelayStats()]
+    else:  # mme
+        from scripts.metric import DelayStats, MMEAcc, MMEAccPlus
+        from scripts.dataset import MMEDataset
+        dataset = MMEDataset(args.ann_path, limit=args.limit)
+        metrics = [MMEAcc(), MMEAccPlus(), DelayStats()]
     metrics = [ExactMatch(), VQASoftAcc(), DelayStats()]
     evaluator = Evaluator(model, dataset, metrics, output_dir=args.output_dir, warmup=args.warmup, seed=args.seed)
     evaluator.run(limit=args.limit)
