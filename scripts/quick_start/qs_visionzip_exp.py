@@ -26,16 +26,37 @@ CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP.forward
 
 model_path = "liuhaotian/llava-v1.5-7b"
 
+# ==== Must be done before loading the model ====
+from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
+from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
+
+# Patch the CLIP Attention / EncoderLayer
+CLIPAttention.forward = CLIPAttention_forward
+CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
+
+# Replace your original VisionTower
+from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP
+from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
+CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP.forward
+# ==== Load the pretrained model after patching ====
+
 tokenizer, model, image_processor, context_len = load_pretrained_model(
     model_path=model_path,
     model_base=None,
     model_name=get_model_name_from_path(model_path)
 )
+
+vt = model.get_vision_tower() if hasattr(model, "get_vision_tower") else model.vision_tower
+layers = vt.vision_model.encoder.layers
+print("encoder layers:", len(layers))
+print("has metric attr on -2:", hasattr(layers[-2], "metric"))
+print("CLIPEncoderLayer.forward pathed to:", layers[-2].forward.__qualname__)
+
 ## VisoinZip retains 54 dominant tokens and 10 contextual tokens
 model = visionzip(model, dominant=54, contextual=10)
 
 ## Inference
-image_file = "/home/w1nd519994824/VisionZip-exp/reference/owl.JPEG"
+image_file = "/u/q/i/qinxinghao/project/VisionZip-exp/reference/owl.JPEG"
 prompt = "Describe the image in detail"
 
 image = Image.open(image_file).convert('RGB')
