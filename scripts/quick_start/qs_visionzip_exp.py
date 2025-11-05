@@ -7,6 +7,7 @@ project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 if project_root not in sys.path:
     sys.path.append(project_root)
 
+
 from llava.model.builder import load_pretrained_model
 from llava.mm_utils import get_model_name_from_path
 from llava.eval.run_llava import eval_model
@@ -16,6 +17,13 @@ from PIL import Image
 from llava.conversation import conv_templates, SeparatorStyle, Conversation
 import torch
 from visionzip import visionzip
+import types
+from visionzip.clip_encoder import CLIPVisionTower_VisionZip
+from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
+
+# monkey patching
+from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP
+CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP.forward
 
 model_path = "liuhaotian/llava-v1.5-7b"
 
