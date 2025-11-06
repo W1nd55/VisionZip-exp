@@ -1,0 +1,45 @@
+# ============================================
+# COPY & PASTE THESE COMMANDS IN ORDER
+# ============================================
+
+# 1. Setup environment
+python -m venv venv
+venv\Scripts\activate
+
+# 2. Install PyTorch first
+# Try CUDA 11.8 (most common):
+pip install torch==2.1.2 torchvision==0.16.2 --index-url https://download.pytorch.org/whl/cu118
+# OR if that fails, use standard version:
+# pip install torch torchvision
+
+# 3. Install LLaVA
+cd models/LLaVA
+pip install --upgrade pip
+pip install -e .
+cd ../..
+
+# 4. Install VisionZip
+cd models/VisionZip
+pip install -e .
+cd ../..
+
+# 5. Test setup
+python scripts/test_visionzip_single.py
+
+# 6. Run VisionZip evaluation (after downloading dataset)
+python scripts/eval_pope_visionzip.py
+
+# 7. Install SparseVLM
+cd models/SparseVLMs
+pip install -e .
+cd ../..
+
+# 8. Run SparseVLM evaluation
+cd models/SparseVLMs
+python -m llava.eval.model_vqa_loader --model-path liuhaotian/llava-v1.5-7b --question-file ../LLaVA/playground/data/eval/pope/llava_pope_test.jsonl --image-folder ../LLaVA/playground/data/eval/pope/val2014 --answers-file ../LLaVA/playground/data/eval/pope/answers/sparsevlm-v1.5-7b.jsonl --temperature 0 --conv-mode vicuna_v1 --retained_tokens 64
+python llava/eval/eval_pope.py --annotation-dir ../LLaVA/playground/data/eval/pope/coco --question-file ../LLaVA/playground/data/eval/pope/llava_pope_test.jsonl --result-file ../LLaVA/playground/data/eval/pope/answers/sparsevlm-v1.5-7b.jsonl
+cd ../..
+
+# 9. Compare results
+python scripts/compare_results.py
+

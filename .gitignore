@@ -1,0 +1,84 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Large dataset folders
+val2014/
+playground/
+**/playground/
+playground/eval/pope/val2014/
+**/val2014/
+**/coco/
+
+# Large answer/output directories
+**/answers/
+models/LLaVA/playground/eval/*/answers/
+
+# Model checkpoints and weights
+*.bin
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+*.weights
+*.h5
+*.hdf5
+
+# Large archive files
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.rar
+*.7z
+*.gz
+*.bz2
+
+# Nested git repositories
+bitsandbytes/
+
+# Large model directories
+models/*/checkpoints/
+**/llava-v1.5-7b/
+**/clip-vit-*/
+**/vicuna-*/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Answer files (large outputs)
+**/answers/*.jsonl
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Git files from submodules
+.git/
+**/.git/
