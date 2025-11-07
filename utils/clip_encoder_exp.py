@@ -7,41 +7,50 @@ def hybrid_token_score(attn_weights, hidden_states, metric,
                        alpha=(1.0, 0.4, 0.6),
                        tau_feat=0.2, tau_sim=0.1, eps=1e-12):
     """
-    attn_weights: [B, H, L, L]  # 来自倒数第2层
-    hidden_states: [B, L, C]    # 同一层的hidden
-    metric: [B, L, Ck]          # 我们在 monkey-patch 里保存的 keys 的 head-均值
-    返回:
-      scores: [B, L-1]  # 针对每个 patch(不含CLS) 的混合重要性得分
+    Computes a hybrid importance score for vision tokens by combining three factors:
+    1. Attention from the CLS token (s_attn).
+    2. Internal representation uncertainty (H_entropy).
+    3. Mutual Information approximation with other tokens (I_mutual).
+
+    Args:
+      attn_weights: [B, H, L, L]  # Attention weights (e.g., from the last-2 layer)
+      hidden_states: [B, L, C]    # Hidden states from the same layer
+      metric: [B, L, Ck]          # Saved keys' head-mean representation (e.g., from monkey-patching)
+
+    Returns:
+      scores: [B, L-1]  # Mixed importance scores for each patch (excluding the CLS token)
     """
 
     B, H, L, _ = attn_weights.shape
     device = attn_weights.device
 
-    # 1) s_attn: 基于 CLS→patch 的跨头注意力 (与原实现保持一致语义)
-    cls_attn = attn_weights[:, :, 0, 1:]     # [B, H, L-1]
-    s_attn = cls_attn.mean(dim=1)            # [B, L-1]  也可用 .sum(dim=1)
+    # 1) s_attn: Score based on CLS -> patch attention
+    cls_attn = attn_weights[:, :, 0, 1:]     # [B, H, L-1] - Extract CLS attention to all patch tokens
+    s_attn = cls_attn.mean(dim=1)            # [B, L-1] - Average across heads (can also use .sum(dim=1))
 
-    # 2) H_entropy: token 内部表征的不确定性（对通道softmax后熵）
-    #    用 metric（key向量）更贴近注意力空间；温度 tau_feat 控制平滑度
-    x = metric[:, 1:, :].float()             # [B, L-1, Ck]
+    # 2) H_entropy: Internal representation uncertainty (Entropy after softmax across channels)
+    #    Using 'metric' (key vectors) better aligns with the attention space;
+    #    Temperature tau_feat controls the smoothness of the probability distribution.
+    x = metric[:, 1:, :].float()             # [B, L-1, Ck] - Exclude CLS token
     p = F.softmax(x / max(tau_feat, eps), dim=-1).clamp_min(eps)
-    H = -(p * (p.log())).sum(dim=-1)         # [B, L-1]
-    # 归一化到[0,1]（除以最大可能熵 log(Ck)）
+    H = -(p * (p.log())).sum(dim=-1)         # [B, L-1] - Calculate entropy
+    # Normalize to [0,1] (Divide by the maximum possible entropy log(Ck))
     H = H / (torch.log(torch.tensor(x.shape[-1], device=device)) + eps)
 
-    # 3) I_mutual: 与“其它token”的互信息近似 —— 用“相似度分布熵的反向”
-    #    先做单位化余弦，再对每个 token 的相似度分布求熵；I = 1 - H_norm
-    z = F.normalize(metric[:, 1:, :].float(), dim=-1)     # [B, L-1, Ck]
-    sim = torch.bmm(z, z.transpose(1, 2))                 # [B, L-1, L-1]
-    # 去掉自相似项影响
+    # 3) I_mutual: Mutual Information approximation with "other tokens" -- using the inverse of normalized similarity distribution entropy
+    #    First, compute cosine similarity, then calculate the entropy of the similarity distribution for each token; I = 1 - H_norm
+    z = F.normalize(metric[:, 1:, :].float(), dim=-1)     # [B, L-1, Ck] - L2-normalize key vectors
+    sim = torch.bmm(z, z.transpose(1, 2))                 # [B, L-1, L-1] - Pairwise similarity matrix
+    # Remove the influence of self-similarity (set diagonal to a large negative number)
     eye = torch.eye(sim.size(-1), device=device).unsqueeze(0)
     sim = sim.masked_fill(eye.bool(), -1e9)
     q = F.softmax(sim / max(tau_sim, eps), dim=-1).clamp_min(eps)
-    Hsim = -(q * (q.log())).sum(dim=-1)                   # [B, L-1]
+    Hsim = -(q * (q.log())).sum(dim=-1)                   # [B, L-1] - Calculate similarity entropy
+    # Normalize similarity entropy
     Hsim = Hsim / (torch.log(torch.tensor(q.shape[-1], device=device)) + eps)
-    I = 1.0 - Hsim                                        # 越“集中”越大
+    I = 1.0 - Hsim                                        # The more "concentrated" (higher similarity to few others), the larger I (Mutual Information proxy)
 
-    # 4) 不同量纲做稳健归一化（z-score 或 min-max 皆可；这里用z-score）
+    # 4) Robust normalization for different magnitudes (z-score or min-max can be used; z-score used here)
     def zscore(t):
         m = t.mean(dim=1, keepdim=True)
         s = t.std(dim=1, keepdim=True) + eps
@@ -52,7 +61,7 @@ def hybrid_token_score(attn_weights, hidden_states, metric,
     s3 = zscore(I)
 
     a1, a2, a3 = alpha
-    scores = a1 * s1 + a2 * s2 + a3 * s3                   # [B, L-1]
+    scores = a1 * s1 + a2 * s2 + a3 * s3                   # [B, L-1] - Final hybrid score
     return scores
 
 

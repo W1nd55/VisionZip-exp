@@ -77,31 +77,35 @@ class DelayStats(BaseMetric):
     def compute(self) -> Dict[str, Any]:
         if not self.logs:
             return {}
-        keys = sorted(self.logs[0].keys())
+        keys = sorted({k for x in self.logs for k in x.keys()})
         out = {}
         for k in keys:
             arr = [x[k] for x in self.logs if k in x]
             if not arr: 
                 continue
-            out[f"{k}_ms_p50"] = percentile(arr, 50)
-            out[f"{k}_ms_p95"] = percentile(arr, 95)
-            out[f"{k}_ms_avg"] = sum(arr)/len(arr)
+            base = k[:-3] if k.endswith("_ms") else k
+            out[f"{base}_ms_p50"] = percentile(arr, 50)
+            out[f"{base}_ms_p95"] = percentile(arr, 95)
+            out[f"{base}_ms_avg"] = sum(arr)/len(arr)
+ 
+         # 1) e2e_avg(ms)
+        if "end2end_ms_avg" in out:
+            out["e2e_avg(ms)"] = out["end2end_ms_avg"]
+        elif "e2e_ms_avg" in out:
+            out["e2e_avg(ms)"] = out["e2e_ms_avg"]
+ 
         # tok/s
-        if any('num_new_tokens' in x for x in self.logs) and any('decode_ms' in x for x in self.logs):
+        if any('num_new_tokens' in x for x in self.logs) and any(('decode_ms' in x) or ('decode' in x) for x in self.logs):
             toks = sum(x.get('num_new_tokens', 0) for x in self.logs)
-            decode_ms = sum(x.get('decode_ms', 0.0) for x in self.logs)
-            out["decode_tok_per_s"] = toks / (decode_ms/1000.0 + 1e-9)
+            decode_ms = sum(
+                 (x.get('decode_ms', 0.0) if 'decode_ms' in x else x.get('decode', 0.0))
+                 for x in self.logs
+            )
+            tps = toks / (decode_ms/1000.0 + 1e-9)
+            out["decode_tok_per_s"] = tps
+            out["tok/s"] = tps
         return out
     
-# def _yn(s: str) -> Optional[str]:
-#     t = _normalize_text(s)
-#     if t.startswith("yes"): return "yes"
-#     if t.startswith("no"):  return "no"
-#     # Error tolerance: check for independent yes/no within the sentence
-#     toks = t.replace(".", " ").split()
-#     if "yes" in toks: return "yes"
-#     if "no"  in toks: return "no"
-#     return None
 def _yn(s: str):
     if not s:
         return None

@@ -74,7 +74,7 @@ def resolve_evalkit(cli_path: str | None) -> Path:
         if not p.exists():
             raise FileNotFoundError(f"evalkit not found: {p}")
         return p
-    # 常见候选位置
+
     this_dir = Path(__file__).resolve().parent
     repo_root = this_dir.parent
     candidates = [
@@ -85,8 +85,7 @@ def resolve_evalkit(cli_path: str | None) -> Path:
         if c.exists():
             return c
     raise FileNotFoundError(
-        "evalkit.py not found. 请用 --evalkit 指定绝对路径，"
-        "或把 evalkit.py 放在仓库根目录 /scripts 下之一。"
+        "evalkit.py not found. Use --evalkit to specify its absolute path"
     )
     
 def run_eval_for_subtask(ann_path: Path, out_dir: Path, evalkit_path: Path):
