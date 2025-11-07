@@ -86,3 +86,45 @@ class MMEDataset(BaseDataset):
     def __iter__(self) -> Iterable[Sample]:
         for s in self._samples:
             yield s
+
+class POPEDataset(BaseDataset):
+    """
+    POPE (Polling-based Object Probing Evaluation) Dataset
+    Expects an annotations file with a list of dicts:
+    {
+      "question_id": "123",
+      "image": "/path/to/img.jpg",  # or "image_path"
+      "text": "Is there a cat in the image?",
+      "label": "yes"  # or "no"
+    }
+    """
+    def __init__(self, ann_path: str, limit: Optional[int] = None):
+        with open(ann_path, "r") as f:
+            data = json.load(f)
+        if limit is not None:
+            data = data[:limit]
+        self._samples: List[Sample] = []
+        
+        for idx, it in enumerate(data):
+            qid = str(it.get("question_id", idx))
+            img_path = it.get("image") or it.get("image_path")
+            question = it.get("text") or it.get("question")
+            label = (it.get("label") or it.get("answer", "")).strip().lower()
+            
+            if question and not question.lower().strip().endswith(("yes or no", "yes or no.")):
+                question = question.rstrip() + " Please answer yes or no."
+            
+            self._samples.append(Sample(
+                qid=qid,
+                image_path=img_path,
+                prompt=question,
+                answers=[label] if label in ("yes", "no") else None,
+                meta={"original_label": label}
+            ))
+    
+    def __len__(self) -> int:
+        return len(self._samples)
+    
+    def __iter__(self) -> Iterable[Sample]:
+        for s in self._samples:
+            yield s

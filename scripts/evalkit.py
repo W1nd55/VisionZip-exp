@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_new_tokens", type=int, default=256)
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--dataset", type=str, default="vqa", choices=["vqa", "mme"],
+    parser.add_argument("--dataset", type=str, default="vqa", choices=["vqa", "mme", 'pope'],
                     help="datatset options")
     args = parser.parse_args()
 
@@ -37,10 +37,17 @@ if __name__ == "__main__":
         from scripts.metric import ExactMatch, VQASoftAcc
         dataset = VQAv2Dataset(args.ann_path, limit=args.limit)
         metrics = [ExactMatch(), VQASoftAcc(), DelayStats()]
-    else:  # MME
+    elif args.dataset == "mme":
         from scripts.dataset import MMEDataset
         from scripts.metric import MMEAcc, MMEAccPlus
         dataset = MMEDataset(args.ann_path, limit=args.limit)
         metrics = [MMEAcc(), MMEAccPlus(), DelayStats()]
+    elif args.dataset == "pope":
+        from scripts.dataset import POPEDataset
+        from scripts.metric import POPEAcc, POPEPrecisionRecallF1
+        dataset = POPEDataset(args.ann_path, limit=args.limit)
+        metrics = [POPEAcc(), POPEPrecisionRecallF1(), DelayStats()]
+    else:
+        raise ValueError(f"Unknown dataset: {args.dataset}")
     evaluator = Evaluator(model, dataset, metrics, output_dir=args.output_dir, warmup=args.warmup, seed=args.seed)
     evaluator.run(limit=args.limit)

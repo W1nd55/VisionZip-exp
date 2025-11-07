@@ -146,3 +146,77 @@ class MMEAccPlus(BaseMetric):
         n_img = len(self.pairs)
         both_true = sum(1 for v in self.pairs.values() if v["pos"] is True and v["neg"] is True)
         return {"mme_acc_plus": (both_true / n_img) if n_img else 0.0, "mme_count_img": n_img}
+
+class POPEAcc(BaseMetric):
+    """POPE accuracy metric - simple yes/no accuracy"""
+    def __init__(self):
+        self.n = 0
+        self.correct = 0
+        
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        if not sample.answers:
+            return
+        
+        gold = sample.answers[0]  # "yes" or "no"
+        if gold not in ("yes", "no"):
+            return
+            
+        # 从预测文本中提取 yes/no
+        pred = _yn(pred_text)  # 使用已有的 _yn 函数
+        
+        self.n += 1
+        if pred == gold:
+            self.correct += 1
+    
+    def compute(self) -> Dict[str, Any]:
+        acc = self.correct / self.n if self.n > 0 else 0.0
+        return {
+            "pope_acc": acc,
+            "pope_correct": self.correct,
+            "pope_total": self.n
+        }
+
+
+class POPEPrecisionRecallF1(BaseMetric):
+    """POPE Precision, Recall, F1 (treating 'yes' as positive class)"""
+    def __init__(self):
+        self.tp = 0  # true positive: pred=yes, gold=yes
+        self.fp = 0  # false positive: pred=yes, gold=no
+        self.tn = 0  # true negative: pred=no, gold=no
+        self.fn = 0  # false negative: pred=no, gold=yes
+    
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        if not sample.answers:
+            return
+        
+        gold = sample.answers[0]
+        if gold not in ("yes", "no"):
+            return
+        
+        pred = _yn(pred_text)
+        if pred not in ("yes", "no"):
+            return
+        
+        if pred == "yes" and gold == "yes":
+            self.tp += 1
+        elif pred == "yes" and gold == "no":
+            self.fp += 1
+        elif pred == "no" and gold == "no":
+            self.tn += 1
+        elif pred == "no" and gold == "yes":
+            self.fn += 1
+    
+    def compute(self) -> Dict[str, Any]:
+        precision = self.tp / (self.tp + self.fp) if (self.tp + self.fp) > 0 else 0.0
+        recall = self.tp / (self.tp + self.fn) if (self.tp + self.fn) > 0 else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        
+        return {
+            "pope_precision": precision,
+            "pope_recall": recall,
+            "pope_f1": f1,
+            "pope_tp": self.tp,
+            "pope_fp": self.fp,
+            "pope_tn": self.tn,
+            "pope_fn": self.fn
+        }
