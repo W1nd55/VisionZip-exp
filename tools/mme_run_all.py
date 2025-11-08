@@ -1,200 +1,374 @@
 #!/usr/bin/env python3
-import os, json, csv, subprocess, sys
+# tools/mme_run_all.py
+import os, sys, csv, json, subprocess
 from pathlib import Path
 
+# ---- repo paths ----
 THIS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = THIS_DIR.parent
 
-# ===== Default Configuration (Modify as needed) =====
-MODEL_PATH = "liuhaotian/llava-v1.5-7b"
-DOMINANT = 54
-CONTEXTUAL = 10
-TEMPERATURE = 0.0
-MAX_NEW_TOKENS = 16
-WARMUP = 5
+DEFAULT_EVALKIT = REPO_ROOT / "scripts" / "evalkit.py"
 
-QA_DIRNAME = "questions_answers_YN"  # Common MME structure (two TXT lines: positive/negative question)
-VALID_IMG_EXT = [".jpg", ".jpeg", ".png", ".webp", ".bmp"]
+# ---- bring shared metrics into this runner ----
+# These are used as the canonical metric classes & to decide which keys to collect in summary
+try:
+    from scripts.metric import MMEAcc, MMEAccPlus, DelayStats
+except Exception as e:
+    # Fall back gracefully; you can tighten this if you prefer hard failure
+    print("[warn] Failed to import scripts.metric:", e)
+    MMEAcc = MMEAccPlus = DelayStats = None
 
-# ===== Paths to dependent scripts (Consistent with the scripts you created earlier) =====
-THIS_DIR = Path(__file__).resolve().parent
-REPO_ROOT = THIS_DIR.parent
-TXT_BUILDER = THIS_DIR / "mme_ann_from_txtpairs.py"  # Script to be created in section 2
-GENERIC_BUILDER = THIS_DIR / "mme_ann_builder.py"    # Your previous generic builder (if available)
-EVALKIT = REPO_ROOT / "evalkit.py"                   # Your evaluation framework script
+# Map dataset -> which metric keys we expect to aggregate in CSV summaries
+# NOTE: keys match compute() outputs in your metric.py
+METRIC_KEYS_BY_DATASET = {
+    "mme": [
+        # MMEAcc
+        "mme_acc", "mme_count_q",
+        # MMEAccPlus
+        "mme_acc_plus", "mme_count_img",
+        # DelayStats (common)
+        "end2end_ms_avg", "end2end_ms_p50", "end2end_ms_p95",
+        "decode_ms_avg", "decode_tok_per_s",
+    ],
+    # Other datasets can add their own metric keys here if needed
+    # "vqa": [...],
+    # "pope": [...],
+}
 
-def has_txt_pairs(subtask_dir: Path) -> bool:
-    if any(subtask_dir.rglob("questions_answers_YN/*.txt")):
+# ---- annotation builders ----
+PRIMARY_BUILDER_CANDIDATES = [
+    THIS_DIR / "mme_build_ann.py",   # your current primary builder
+    THIS_DIR / "mme_ann_builder.py", # legacy/alternate
+]
+TXT_PAIRS_BUILDER_CANDIDATES = [
+    THIS_DIR / "mme_ann_from_txtpairs.py", # 2-line txt fallback
+]
+
+# ---------------- utils ----------------
+def resolve_first_exist(cands):
+    for p in cands:
+        if p.exists():
+            return p
+    return None
+
+def resolve_required(path_str: str | None, fallback_candidates: list[Path], hint: str) -> Path:
+    if path_str:
+        p = Path(path_str).resolve()
+        if not p.exists():
+            raise FileNotFoundError(f"{hint} not found: {p}")
+        return p
+    p = resolve_first_exist(fallback_candidates)
+    if p is None:
+        raise FileNotFoundError(f"{hint} not found in candidates: {fallback_candidates}")
+    return p
+
+def discover_subtasks(mme_root: Path) -> list[str]:
+    return sorted([p.name for p in mme_root.iterdir() if p.is_dir()])
+
+def _run(cmd, cwd=None, env=None, capture=False, check=True):
+    if capture:
+        return subprocess.run(cmd, cwd=cwd, env=env, check=check, text=True, capture_output=True)
+    return subprocess.run(cmd, cwd=cwd, env=env, check=check)
+
+# ------------- build annotations -------------
+def build_ann_primary(primary_builder: Path, mme_root: Path, subtask: str, out_json: Path) -> bool:
+    cmd = [
+        sys.executable, str(primary_builder),
+        "--mme_root", str(mme_root),
+        "--subtask", subtask,
+        "--out", str(out_json),
+    ]
+    print("[build-primary]", " ".join(cmd))
+    try:
+        _run(cmd, capture=False, check=True)
         return True
-    return any(subtask_dir.rglob("*.txt"))
+    except subprocess.CalledProcessError as e:
+        print(f"[build-primary] failed rc={e.returncode}")
+        return False
 
-def has_generic_ann(subtask_dir: Path) -> bool:
-    # Roughly check for the existence of json/jsonl/csv/tsv annotation files
-    pats = ["*.json", "*.jsonl", "*.csv", "*.tsv", "*.txt"]
-    for p in pats:
-        if any(subtask_dir.glob(p)):
-            return True
-        if any(subtask_dir.rglob(p)):  # Deep search
-            return True
-    return False
-def build_ann_for_subtask(mme_root: Path, subtask: str, out_json: Path):
+def build_ann_txtpairs(txtpairs_builder: Path, subtask_dir: Path, out_json: Path) -> bool:
+    cmd = [
+        sys.executable, str(txtpairs_builder),
+        "--subtask_dir", str(subtask_dir),
+        "--qa_glob", "**/*.txt",
+        "--out", str(out_json),
+    ]
+    print("[build-txtpairs]", " ".join(cmd))
+    try:
+        _run(cmd, capture=False, check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"[build-txtpairs] failed rc={e.returncode}")
+        return False
+
+def build_ann_for_subtask(primary_builder: Path | None,
+                          txtpairs_builder: Path | None,
+                          mme_root: Path, subtask: str, out_json: Path):
+    """Try structured builder first, fallback to txt-pairs."""
     subtask_dir = mme_root / subtask
     out_json.parent.mkdir(parents=True, exist_ok=True)
 
-    if has_txt_pairs(subtask_dir):
-        qa_glob = "questions_answers_YN/*.txt" if any(subtask_dir.rglob("questions_answers_YN/*.txt")) else "**/*.txt"
-        cmd = [
-            sys.executable, str(TXT_BUILDER),
-            "--subtask_dir", str(subtask_dir),
-            "--qa_glob", qa_glob,
-            "--out", str(out_json),
-        ]
-        print("[build][txtpairs]", " ".join(cmd))
-        subprocess.run(cmd, check=True)
-        return True
+    if primary_builder is not None and build_ann_primary(primary_builder, mme_root, subtask, out_json):
+        return
+    if txtpairs_builder is not None and build_ann_txtpairs(txtpairs_builder, subtask_dir, out_json):
+        return
+    raise RuntimeError(f"Both builders failed for subtask '{subtask}'")
 
-    if GENERIC_BUILDER.exists() and has_generic_ann(subtask_dir):
-        cmd = [
-            sys.executable, str(GENERIC_BUILDER),
-            "--mme_root", str(mme_root),
-            "--subtask", subtask,
-            "--out", str(out_json),
-        ]
-        print("[build][generic]", " ".join(cmd))
-        subprocess.run(cmd, check=True)
-        return True
+# ------------- flatten pairs -> per-question -------------
+def _append_if_set(cmd: list[str], flag: str, value):
+    if value is not None:
+        cmd += [flag, str(value)]
 
-    print(f"[warn] No recognizable annotations for {subtask_dir}")
-    return False
+def _ensure_suffix(q: str) -> str:
+    if not q:
+        return q
+    suff = "Please answer yes or no."
+    return q if q.lower().strip().endswith(suff.lower()) else (q.rstrip() + " " + suff)
 
+def try_flatten_mme_ann(ann_path: Path, subtask_name: str):
+    """
+    If the built ann is in pair schema (q_pos/q_neg), rewrite in-place to per-question schema.
+    Also inject meta for MMEAccPlus: meta={'image_id','pair'}
+    """
+    try:
+        data = json.loads(ann_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"[flatten] skip (read failed): {ann_path} -> {e}")
+        return
 
-def resolve_evalkit(cli_path: str | None) -> Path:
-    if cli_path:
-        p = Path(cli_path).resolve()
-        if not p.exists():
-            raise FileNotFoundError(f"evalkit not found: {p}")
-        return p
+    if not isinstance(data, list) or not data:
+        print(f"[flatten] skip (empty/non-list): {ann_path}")
+        return
 
-    this_dir = Path(__file__).resolve().parent
-    repo_root = this_dir.parent
-    candidates = [
-        repo_root / "evalkit.py",
-        repo_root / "scripts" / "evalkit.py",
-    ]
-    for c in candidates:
-        if c.exists():
-            return c
-    raise FileNotFoundError(
-        "evalkit.py not found. Use --evalkit to specify its absolute path"
-    )
-    
-def run_eval_for_subtask(ann_path: Path, out_dir: Path, evalkit_path: Path):
+    sample = data[0]
+    if "question_id" in sample:
+        print(f"[flatten] already flat: {ann_path}")
+        return
+
+    if not all(k in sample for k in ("image_path", "q_pos", "q_neg")):
+        print(f"[flatten] skip (not pair schema): {ann_path}")
+        return
+
+    flat = []
+    for rec in data:
+        img_path = rec.get("image_path")
+        base_id = rec.get("image_id") or Path(img_path).stem
+
+        qpos = _ensure_suffix(rec.get("q_pos") or "")
+        qneg = _ensure_suffix(rec.get("q_neg") or "")
+
+        if qpos:
+            flat.append({
+                "question_id": f"{base_id}_{subtask_name}_pos",
+                "image_path": img_path,
+                "question": qpos,
+                "prompt": qpos,
+                "answers": ["yes"],
+                # critical for MMEAccPlus:
+                "image_id": base_id,
+                "pair": "pos",
+                "meta": {"image_id": base_id, "pair": "pos"},
+            })
+        if qneg:
+            flat.append({
+                "question_id": f"{base_id}_{subtask_name}_neg",
+                "image_path": img_path,
+                "question": qneg,
+                "prompt": qneg,
+                "answers": ["no"],
+                "image_id": base_id,
+                "pair": "neg",
+                "meta": {"image_id": base_id, "pair": "neg"},
+            })
+
+    if not flat:
+        print(f"[flatten] produced 0 items, keep original: {ann_path}")
+        return
+
+    ann_path.write_text(json.dumps(flat, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[flatten] flattened -> {ann_path} ({len(flat)} items, with meta.image_id/pair)")
+
+# ------------- call evalkit -------------
+def run_eval_for_subtask(
+    evalkit: Path,
+    cfg_yaml: Path,
+    ann_path: Path,
+    out_dir: Path,
+    # YAML-first; all following args only override when not None
+    dataset=None, model_type=None, model_path=None,
+    temperature=None, max_new_tokens=None, warmup=None, seed=None, limit=None,
+    dominant=None, contextual=None, retained_tokens=None, conv_mode=None,
+):
     out_dir.mkdir(parents=True, exist_ok=True)
+    cmd = [sys.executable, str(evalkit), "--cfg", str(cfg_yaml)]
 
-    cmd = [
-        sys.executable, str(evalkit_path),
-        "--dataset", "mme",
-        "--model_path", MODEL_PATH,
-        "--ann_path", str(ann_path),
-        "--output_dir", str(out_dir),
-        "--dominant", str(DOMINANT),
-        "--contextual", str(CONTEXTUAL),
-        "--temperature", str(TEMPERATURE),
-        "--max_new_tokens", str(MAX_NEW_TOKENS),
-        "--warmup", str(WARMUP),
-    ]
+    # per-subtask must override:
+    _append_if_set(cmd, "--ann_path", str(ann_path))
+    _append_if_set(cmd, "--output_dir", str(out_dir))
+
+    # optional overrides:
+    _append_if_set(cmd, "--dataset", dataset)
+    _append_if_set(cmd, "--model_type", model_type)
+    _append_if_set(cmd, "--model_path", model_path)
+    _append_if_set(cmd, "--temperature", temperature)
+    _append_if_set(cmd, "--max_new_tokens", max_new_tokens)
+    _append_if_set(cmd, "--warmup", warmup)
+    _append_if_set(cmd, "--seed", seed)
+    _append_if_set(cmd, "--limit", limit)
+    _append_if_set(cmd, "--dominant", dominant)
+    _append_if_set(cmd, "--contextual", contextual)
+    _append_if_set(cmd, "--retained_tokens", retained_tokens)
+    _append_if_set(cmd, "--conv_mode", conv_mode)
+
     print("[eval]", " ".join(cmd))
-
     env = os.environ.copy()
     env["PYTHONPATH"] = f"{str(REPO_ROOT)}:{env.get('PYTHONPATH','')}"
-    subprocess.run(cmd, check=True, cwd=str(REPO_ROOT), env=env) 
+    _run(cmd, cwd=str(REPO_ROOT), env=env, check=True)
 
+# ------------- summarize -------------
 def read_summary_csv(csv_path: Path) -> dict:
     res = {}
-    if not csv_path.exists():  
+    if not csv_path.exists():
         return res
     with open(csv_path, newline="") as f:
         r = csv.reader(f)
-        for k, v in r:
-            # Handle conversion to number or string
+        for row in r:
+            if len(row) != 2:
+                continue
+            k, v = row
             try:
                 v = float(v)
-            except:
+            except Exception:
                 pass
             res[k] = v
     return res
 
+def keys_for_dataset(dataset: str) -> list[str]:
+    # Prefer registry; fallback to a safe default
+    return METRIC_KEYS_BY_DATASET.get(dataset, [
+        "end2end_ms_avg","end2end_ms_p50","end2end_ms_p95","decode_ms_avg","decode_tok_per_s"
+    ])
+
+# ------------- main -------------
 def main():
     import argparse
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--mme_root", required=True,
-                    help="Root directory of MME_Benchmark (containing subtask directories)")
-    ap.add_argument("--out_root", required=True,
-                    help="Output root directory (for saving annotations and evaluation results)")
-    ap.add_argument("--only", nargs="*", default=None,
-                    help="Only evaluate specified subtask names (can be multiple)")
-    ap.add_argument("--evalkit", default=None, help="evalkit.py absolute path (default: auto-detect)")
+    ap = argparse.ArgumentParser(description="Run MME across subtasks (YAML-first, with shared metrics imported)")
+    ap.add_argument("--mme_root", required=True)
+    ap.add_argument("--out_root", required=True)
+    ap.add_argument("--only", nargs="*", default=None, help="e.g., --only OCR color")
+
+    ap.add_argument("--evalkit", default=None, help="Path to scripts/evalkit.py; default=auto")
+    ap.add_argument("--primary_builder", default=None, help="Path to mme_build_ann.py / mme_ann_builder.py; default=auto")
+    ap.add_argument("--txtpairs_builder", default=None, help="Path to mme_ann_from_txtpairs.py; default=auto")
+
+    # YAML (required)
+    ap.add_argument("--cfg", type=str, required=True, help="config/xxx.yaml")
+
+    # Optional overrides (None = do not override YAML)
+    ap.add_argument("--dataset", type=str, default=None, choices=["vqa","mme","pope"])
+    ap.add_argument("--model_type", type=str, default=None, choices=["llava_vzip","sparsevlm"])
+    ap.add_argument("--model_path", type=str, default=None)
+
+    ap.add_argument("--temperature", type=float, default=None)
+    ap.add_argument("--max_new_tokens", type=int, default=None)
+    ap.add_argument("--warmup", type=int, default=None)
+    ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--limit", type=int, default=None)
+
+    ap.add_argument("--dominant", type=int, default=None)
+    ap.add_argument("--contextual", type=int, default=None)
+    ap.add_argument("--retained_tokens", type=int, default=None)
+    ap.add_argument("--conv_mode", type=str, default=None)
+
     args = ap.parse_args()
 
     mme_root = Path(args.mme_root).resolve()
     out_root = Path(args.out_root).resolve()
     ann_dir = out_root / "ann"
     results_root = out_root / "results"
-    evalkit_path = resolve_evalkit(args.evalkit)
 
-    # Automatically discover subtasks (first-level subdirectories)
-    subtasks = [p.name for p in mme_root.iterdir() if p.is_dir()]
-    subtasks.sort()
+    evalkit = resolve_required(args.evalkit, [DEFAULT_EVALKIT], "evalkit")
 
-    if args.only:
-        subtasks = [s for s in subtasks if s in set(args.only)]
-        print("[info] Filtered subtasks:", subtasks)
+    # builders
+    primary_builder = Path(args.primary_builder).resolve() if args.primary_builder else resolve_first_exist(PRIMARY_BUILDER_CANDIDATES)
+    if primary_builder and not primary_builder.exists():
+        primary_builder = None
+    txtpairs_builder = Path(args.txtpairs_builder).resolve() if args.txtpairs_builder else resolve_first_exist(TXT_PAIRS_BUILDER_CANDIDATES)
+    if txtpairs_builder and not txtpairs_builder.exists():
+        txtpairs_builder = None
 
-    # 1) Build annotations and run evaluation
+    cfg_yaml = Path(args.cfg).resolve()
+    subtasks = args.only or discover_subtasks(mme_root)
+    print("[info] subtasks:", subtasks)
+
+    # If dataset override not provided, we don't know which key set to use ahead of time.
+    # We'll assume 'mme' since this runner is for MME; but we also pass --dataset when provided.
+    dataset_for_summary = args.dataset or "mme"
+
     done = []
-    for s in subtasks:
-        print(f"\n=== Subtask: {s} ===")
-        ann_path = ann_dir / f"ann_mme_{s}.json"
-        ok = build_ann_for_subtask(mme_root, s, ann_path)
-        if not ok:
-            print(f"[skip] {s} (no annotations found)")
+    for sub in subtasks:
+        print(f"\n=== MME Subtask: {sub} ===")
+        ann_path = ann_dir / f"ann_mme_{sub}.json"
+        try:
+            build_ann_for_subtask(primary_builder, txtpairs_builder, mme_root, sub, ann_path)
+            # flatten (and inject meta.image_id/pair) so MMEAccPlus can work
+            try_flatten_mme_ann(ann_path, subtask_name=sub)
+        except Exception as e:
+            print(f"[skip] {sub} (build failed: {e})")
             continue
-        out_dir = results_root / f"outputs_{s}"
-        run_eval_for_subtask(ann_path, out_dir, evalkit_path)
-        done.append(s)
 
-    # 2) Summarize results
+        out_dir = results_root / f"outputs_{sub}"
+        try:
+            run_eval_for_subtask(
+                evalkit=evalkit,
+                cfg_yaml=cfg_yaml,
+                ann_path=ann_path,
+                out_dir=out_dir,
+                dataset=args.dataset,  # keep None to defer to YAML unless you override
+                model_type=args.model_type,
+                model_path=args.model_path,
+                temperature=args.temperature,
+                max_new_tokens=args.max_new_tokens,
+                warmup=args.warmup,
+                seed=args.seed,
+                limit=args.limit,
+                dominant=args.dominant,
+                contextual=args.contextual,
+                retained_tokens=args.retained_tokens,
+                conv_mode=args.conv_mode,
+            )
+            done.append(sub)
+        except subprocess.CalledProcessError as e:
+            print(f"[error] {sub} evaluation failed: returncode={e.returncode}")
+        except Exception as e:
+            print(f"[error] {sub} evaluation failed: {e}")
+
+    # ---- summarize ----
     print("\n=== Summarizing ===")
+    wanted_keys = keys_for_dataset(dataset_for_summary)
     summary_rows = []
-    for s in done:
-        summ = read_summary_csv(results_root / f"outputs_{s}" / "summary.csv")
-        row = {"subtask": s}
-        # Key metrics: mme_acc / mme_acc_plus
-        for k in ["mme_acc", "mme_acc_plus",
-                  "end2end_ms_avg", "end2end_ms_p50", "end2end_ms_p95",
-                  "decode_ms_avg", "prefill_ms_avg", "decode_tok_per_s"]:
+    for sub in done:
+        summ = read_summary_csv(results_root / f"outputs_{sub}" / "summary.csv")
+        row = {"subtask": sub}
+        for k in wanted_keys:
             if k in summ:
                 row[k] = summ[k]
         summary_rows.append(row)
 
-    # Write the master summary table
     summary_csv = out_root / "mme_summary.csv"
-    keys = sorted({k for row in summary_rows for k in row.keys()})
-    with open(summary_csv, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=keys)
-        w.writeheader()
-        w.writerows(summary_rows)
-    print(f"[ok] Summary saved to: {summary_csv}")
-
-    # Also output a brief summary log
-    def safe(v): 
-        return f"{v:.4f}" if isinstance(v, (int, float)) else str(v)
-    for row in summary_rows:
-        print(" -", row["subtask"],
-              "ACC=", safe(row.get("mme_acc","")),
-              "ACC+=", safe(row.get("mme_acc_plus","")),
-              "e2e_avg(ms)=", safe(row.get("end2end_ms_avg","")),
-              "tok/s=", safe(row.get("decode_tok_per_s","")))
+    if summary_rows:
+        keys = sorted({k for r in summary_rows for k in r.keys()})
+        with open(summary_csv, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=keys)
+            w.writeheader()
+            w.writerows(summary_rows)
+        print(f"[ok] Summary saved to: {summary_csv}")
+        print("\n=== Results (brief) ===")
+        for r in summary_rows:
+            printable = ", ".join([f"{k}={r[k]}" for k in keys if k != "subtask" and k in r])
+            print(f" - {r['subtask']}: {printable}")
+    else:
+        print("[warn] No results to summarize")
 
 if __name__ == "__main__":
     main()

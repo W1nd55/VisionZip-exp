@@ -1,11 +1,16 @@
 # tools/mme_build_ann.py
 import os, json, argparse, glob, csv
 from pathlib import Path
+from typing import List, Dict, Any, Tuple
 
 VALID_IMG_EXT = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
-def find_annotation_file(subdir: Path):
-    # 常见命名优先级
+def find_annotation_file(subdir: Path) -> Path | None:
+    """
+    Finds the primary annotation file within a subtask directory.
+    Prioritizes common filenames, then falls back to searching by extension.
+    """
+    # Priority for common file names
     candidates = [
         "qa.json", "questions.json", "annotation.json",
         "mme_qa.json", "pairs.json", "eval.json",
@@ -15,7 +20,7 @@ def find_annotation_file(subdir: Path):
         if p.exists():
             return p
 
-    # 兜底：扫 json/jsonl/csv/tsv
+    # Fallback: Scan for common annotation file extensions
     js = list(subdir.glob("*.json"))
     if js: return js[0]
     jl = list(subdir.glob("*.jsonl"))
@@ -26,7 +31,8 @@ def find_annotation_file(subdir: Path):
     if ts: return ts[0]
     return None
 
-def load_annotation(path: Path):
+def load_annotation(path: Path) -> List[Dict[str, Any]]:
+    """Loads annotation records from JSON, JSONL, CSV, or TSV files."""
     if path.suffix.lower() == ".json":
         with open(path, "r") as f:
             return json.load(f)
@@ -48,13 +54,13 @@ def load_annotation(path: Path):
     else:
         raise ValueError(f"Unknown annotation format: {path}")
 
-def guess_fields(rec: dict):
+def guess_fields(rec: dict) -> Tuple[str | None, str | None, str | None, str | None, str | None]:
     """
-    尝试兼容不同字段命名，返回：
-    image (str), q_pos (str), a_pos ('yes'), q_neg (str), a_neg ('no')
-    允许记录里就是分开的两条（正/负各一条），由上层聚合；也允许一条里含正负成对。
+    Attempts to guess fields based on common naming conventions.
+    Returns: image, q_pos, a_pos, q_neg, a_neg
+    (Allows records to be single or contain the pos/neg pair.)
     """
-    # 常见字段名候选
+    # Candidates for common field names
     img_keys = ["image", "image_path", "img", "img_path", "image_name", "file_name"]
     qpos_keys = ["q_pos", "question_pos", "question_yes", "positive_question"]
     apos_keys = ["a_pos", "answer_pos", "answer_yes", "positive_answer"]
@@ -73,33 +79,32 @@ def guess_fields(rec: dict):
     q_neg = first(qneg_keys)
     a_neg = first(aneg_keys)
 
-    # 如果是单条 yes/no 记录，需要上层先聚合；这里直接返回原样
+    # If it's a single yes/no record, it needs aggregation in the upper layer; return as is
     return image, q_pos, a_pos, q_neg, a_neg
 
-def build_pairs(records, img_root: Path):
+def build_pairs(records: List[Dict[str, Any]], img_root: Path) -> List[Dict[str, Any]]:
     """
-    尝试把 annotation 组装成 MME 的“每图两题（pos/neg）”结构。
-    兼容两种来源：
-      1) 每条记录里已经包含 q_pos/q_neg
-      2) 每条只是单个 yes/no 问题，需要根据 image_id 归并为一对
+    Attempts to assemble the annotation into the MME "two questions per image (pos/neg)" structure.
+    Supports two sources:
+      1) Records already contain q_pos/q_neg fields.
+      2) Records are single yes/no questions, needing merging by image_id into a pair.
     """
-    # 尝试直接成对字段
     paired = []
     singles_by_image = {}
 
     for rec in records:
         image, q_pos, a_pos, q_neg, a_neg = guess_fields(rec)
 
-        # 兜底：一些文件把图片名放在 'image_id' 里
+        # Fallback: some files use 'image_id' for the image name
         if image is None and "image_id" in rec:
             image = rec["image_id"]
 
-        # 再兜底：question/answer 字段只有一条
+        # Fallback: only one question/answer field is present
         if q_pos is None and q_neg is None:
             q = rec.get("question") or rec.get("q") or rec.get("prompt")
             a = (rec.get("answer") or rec.get("a") or rec.get("label") or "").strip().lower()
             if image is None:
-                # 有的把图片文件放 'image' / 'img'，上面已经尽力了
+                # Image field still missing after all attempts
                 raise ValueError(f"Cannot find image field in record: {rec}")
             singles_by_image.setdefault(image, []).append((q, a))
             continue
@@ -107,7 +112,7 @@ def build_pairs(records, img_root: Path):
         if image is None:
             raise ValueError(f"Missing image field in paired record: {rec}")
 
-        # 标准化 yes/no
+        # Standardize yes/no answers
         def yn(x, default):
             x = (x or default or "").strip().lower()
             return "yes" if x.startswith("y") else ("no" if x.startswith("n") else default)
@@ -124,13 +129,13 @@ def build_pairs(records, img_root: Path):
             "a_neg": a_neg
         })
 
-    # 处理单条 -> 成对（按 image 分两条：一条答案 yes，一条答案 no）
+    # Process singles -> pairs (Assuming one 'yes' question and one 'no' question per image)
     for image, qa_list in singles_by_image.items():
-        # 选出一条 yes 和一条 no（如果超过一条，取前两条）
+        # Select one yes question and one no question (take the first two if multiple exist)
         yes_q = next((q for q,a in qa_list if a in ("yes","y","1","true")), None)
         no_q  = next((q for q,a in qa_list if a in ("no","n","0","false")), None)
         if yes_q is None or no_q is None:
-            # 数据不完整，跳过或抛错均可；这里选择跳过
+            # Incomplete data, choose to skip or raise error; here we skip
             continue
         paired.append({
             "image_id": Path(image).stem,
@@ -143,7 +148,8 @@ def build_pairs(records, img_root: Path):
 
     return paired
 
-def ensure_suffix(q, suffix):
+def ensure_suffix(q: str | None, suffix: str) -> str | None:
+    """Appends the required suffix to the question if it's missing."""
     if q is None:
         return None
     q = q.strip()
@@ -151,30 +157,41 @@ def ensure_suffix(q, suffix):
     return q if q.lower().endswith(suff.lower()) else (q.rstrip() + " " + suff)
 
 def resolve_image(img_root: Path, image_name: str) -> Path:
+    """
+    Attempts to find the full path to the image file under img_root.
+    Handles absolute paths, direct match, stem + extension match, and rglob fallback.
+    """
     p = Path(image_name)
     if p.is_absolute() and p.exists():
         return p
-    # 尝试直接拼接
+    # Try direct path concatenation
     cand = img_root / image_name
     if cand.exists():
         return cand
-    # 广播匹配
+    # Broadcast match (try common extensions)
     stem = Path(image_name).stem
     for ext in VALID_IMG_EXT:
         c = img_root / f"{stem}{ext}"
         if c.exists():
             return c
-    # 最后全量搜索（慢，但稳）
-    hits = list(img_root.rglob(f"{stem}*"))
+    # Final full search (slow, but robust)
+    hits = list(img_root.rglob(f"{stem}.*"))
     if hits:
         return hits[0]
+    # Check if the file is directly in the subtask root
+    if Path(image_name).suffix not in VALID_IMG_EXT:
+        for ext in VALID_IMG_EXT:
+            c = img_root / f"{image_name}{ext}"
+            if c.exists():
+                return c
+
     raise FileNotFoundError(f"Image not found for {image_name} under {img_root}")
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mme_root", required=True, help="MME_Benchmark 目录（包含 existence/ color/ ... 子目录）")
-    ap.add_argument("--subtask", required=True, help="子任务目录名，例如 existence / color / OCR ...")
-    ap.add_argument("--out", required=True, help="输出 JSON 路径")
+    ap.add_argument("--mme_root", required=True, help="Root directory of MME_Benchmark (containing subtask dirs like existence/ color/ ...)")
+    ap.add_argument("--subtask", required=True, help="Subtask directory name, e.g., existence / color / OCR ...")
+    ap.add_argument("--out", required=True, help="Output JSON path")
     args = ap.parse_args()
 
     subdir = Path(args.mme_root) / args.subtask
@@ -190,6 +207,8 @@ def main():
     paired = build_pairs(records, img_root=subdir)
     print(f"[build_ann] Built {len(paired)} paired items")
 
+    # Ensure output directory exists before saving
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     with open(args.out, "w") as f:
         json.dump(paired, f, ensure_ascii=False, indent=2)
     print(f"[build_ann] Saved to {args.out}")

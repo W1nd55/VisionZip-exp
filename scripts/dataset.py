@@ -1,4 +1,5 @@
-
+#!/usr/bin/env python3
+# scripts/evalkit.py
 # ================= #
 # Dataset: VQAv2    #
 # ================= #
@@ -6,6 +7,13 @@
 from typing import List, Dict, Any, Optional, Iterable
 from scripts.abstract import BaseDataset, Sample
 import json
+from pathlib import Path
+
+def _ensure_suffix(q: str) -> str:
+    """Ensures the prompt ends with the required MME suffix."""
+    if not q: return q
+    suff = "Please answer yes or no."
+    return q if q.lower().strip().endswith(suff.lower()) else (q.rstrip() + " " + suff)
 
 
 class VQAv2Dataset(BaseDataset):
@@ -15,7 +23,7 @@ class VQAv2Dataset(BaseDataset):
       "question_id": "123",
       "image_path": "/path/to/img.jpg",
       "question": "What is ...?",
-      "answers": ["cat", "a cat", "kitty", ...]  # up to 10
+      "answers": ["cat", "a cat", "kitty", ...]  # up to 10 possible answers
     }
     """
     def __init__(self, ann_path: str, limit: Optional[int]=None):
@@ -41,51 +49,97 @@ class VQAv2Dataset(BaseDataset):
 
 class MMEDataset(BaseDataset):
     """
-    ann_json structure (each entry represents two questions, positive and negative, for one image):
-    [
-      {
-        "image_id": "0006adf999ccc899",
-        "image_path": ".../landmark/0006adf999ccc899.jpg",
-        "q_pos": "Is this a photo of Cotehele? Please answer yes or no.",
-        "a_pos": "yes",
-        "q_neg": "Is this a photo of Mozirje Grove? Please answer yes or no.",
-        "a_neg": "no"
-      },
-      ...
-    ]
-    During evaluation, this expands into two Samples (pos/neg). MMEAccPlus will aggregate 
-    results by 'image_id' to calculate ACC+.
+    Supports two types of MME annotations:
+    1) Paired schema: {image_path, image_id?, q_pos, a_pos?, q_neg, a_neg?}
+    2) Flat schema: {question_id, image_path, question/prompt, answers: ["yes"/"no"], meta?}
+       - If meta.pair is missing, it can be inferred from the question_id suffix (*_pos/*_neg).
     """
-    def __init__(self, ann_path: str, limit: Optional[int] = None):
-        with open(ann_path, "r") as f:
-            data = json.load(f)
-        if limit is not None:
-            data = data[:limit]
-        self._samples: List[Sample] = []
+    def __init__(self, ann_path: str, limit: int | None = None):
+        self.limit = limit
+        data = json.loads(Path(ann_path).read_text(encoding="utf-8"))
+        self.samples = []
+
+        def push(qid, img, prompt, answers, image_id=None, pair=None, extra_meta=None):
+            meta = {"image_id": image_id, "pair": pair}
+            if extra_meta and isinstance(extra_meta, dict):
+                meta.update(extra_meta)
+            self.samples.append(Sample(
+                qid=str(qid),
+                image_path=img,
+                prompt=_ensure_suffix(prompt), # Ensure the prompt has the required MME suffix
+                answers=list(answers) if isinstance(answers, (list, tuple)) else [answers],
+                meta=meta
+            ))
+
         for it in data:
-            iid = str(it["image_id"])
-            img = it["image_path"]
-            self._samples.append(Sample(
-                qid=iid + "_pos",
-                image_path=img,
-                prompt=it["q_pos"],
-                answers=[(it.get("a_pos") or "yes").lower()],
-                meta={"image_id": iid, "pair": "pos", "subtask": it.get("subtask")}
-            ))
-            self._samples.append(Sample(
-                qid=iid + "_neg",
-                image_path=img,
-                prompt=it["q_neg"],
-                answers=[(it.get("a_neg") or "no").lower()],
-                meta={"image_id": iid, "pair": "neg", "subtask": it.get("subtask")}
-            ))
+            # ---------- Paired Schema Check ----------
+            if ("q_pos" in it) or ("q_neg" in it):
+                img = it["image_path"]
+                base_id = it.get("image_id") or Path(img).stem
 
-    def __len__(self) -> int:
-        return len(self._samples)
+                qpos = it.get("q_pos")
+                if qpos:
+                    # Positive (Yes) sample
+                    push(
+                        qid=f"{base_id}_pos",
+                        img=img,
+                        prompt=qpos,
+                        # Answer must be "yes" for positive question
+                        answers=["yes" if str(it.get("a_pos","yes")).lower().startswith("y") else "yes"],
+                        image_id=base_id,
+                        pair="pos",
+                        extra_meta=it.get("meta")
+                    )
 
-    def __iter__(self) -> Iterable[Sample]:
-        for s in self._samples:
-            yield s
+                qneg = it.get("q_neg")
+                if qneg:
+                    # Negative (No) sample
+                    push(
+                        qid=f"{base_id}_neg",
+                        img=img,
+                        prompt=qneg,
+                        # Answer must be "no" for negative question
+                        answers=["no"  if str(it.get("a_neg","no")).lower().startswith("n") else "no"],
+                        image_id=base_id,
+                        pair="neg",
+                        extra_meta=it.get("meta")
+                    )
+                continue
+
+            # ---------- Flat Schema Check ----------
+            # Expects fields like {question_id, image_path, question|prompt, answers, meta?}
+            qid   = it.get("question_id") or it.get("qid")
+            img   = it.get("image_path")
+            qtext = it.get("question") or it.get("prompt")
+            ans   = it.get("answers") or []
+            meta  = it.get("meta") or {}
+            image_id = it.get("image_id") or meta.get("image_id") or (Path(img).stem if img else None)
+
+            # Attempt to infer the pair type from QID suffix
+            pair = it.get("pair") or meta.get("pair")
+            if not pair and isinstance(qid, str):
+                low = qid.lower()
+                if low.endswith("_pos") or low.endswith("-pos"):
+                    pair = "pos"
+                elif low.endswith("_neg") or low.endswith("-neg"):
+                    pair = "neg"
+
+            if not qid or not img or not qtext or not ans:
+                # Skip if minimal required fields are missing
+                continue
+
+            push(qid=qid, img=img, prompt=qtext, answers=ans, image_id=image_id, pair=pair, extra_meta=meta)
+
+        # Optional: Skipping the limit truncation here; let Evaluator.run(limit=...) handle it
+        # If pre-truncation is needed:
+        # if self.samples and self.limit: self.samples = self.samples[:self.limit]
+
+    def __iter__(self):
+        # The Evaluator.run method will handle the limit; iterate over all collected samples here
+        return iter(self.samples)
+
+    def __len__(self):
+        return len(self.samples)
 
 class POPEDataset(BaseDataset):
     """
@@ -111,6 +165,7 @@ class POPEDataset(BaseDataset):
             question = it.get("text") or it.get("question")
             label = (it.get("label") or it.get("answer", "")).strip().lower()
             
+            # Ensure question ends with the required yes/no suffix for POPE
             if question and not question.lower().strip().endswith(("yes or no", "yes or no.")):
                 question = question.rstrip() + " Please answer yes or no."
             

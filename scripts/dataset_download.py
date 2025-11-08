@@ -26,8 +26,8 @@ DATASET_CONFIGS = {
         "repo_type": "dataset",
         "description": "POPE (Polling-based Object Probing Evaluation)",
         "size": "~510 MB",
-        # HF 上只有 parquet，真正的 JSON 在 GitHub：
-        "includes": [  # 保留也行，但命中不到
+        # HF only has parquet files; the actual JSONs are on GitHub:
+        "includes": [  # Keep these for potential future updates, but they might not match current HF files
             "coco_pope_random.json",
             "coco_pope_popular.json",
             "coco_pope_adversarial.json",
@@ -39,12 +39,12 @@ DATASET_CONFIGS = {
         ],
     },
     "mme": {
-        # 你当前用的是 darkyarding/MME；如需改回 lmms-lab/MME，自行替换
+        # Note: Current use is darkyarding/MME. Replace with lmms-lab/MME if needed.
         "hf_repo": "darkyarding/MME",
         "repo_type": "dataset",
         "description": "MME (Multi-Modal Evaluation) benchmark",
         "size": "~3 GB",
-        "note": "14 个子任务图片与注释；zip 发布",
+        "note": "14 subtask images and annotations; distributed as a zip file.",
         "includes": [
             "MME_Benchmark_release_version.zip",
             "*MME*Benchmark*release*version*.zip",
@@ -84,6 +84,7 @@ DATASET_CONFIGS = {
 # ===========================================================
 
 def check_hf_cli():
+    """Checks if the huggingface-cli command is available in the system path."""
     if not shutil.which("huggingface-cli"):
         print("❌ Error: huggingface-cli not found!")
         print("  pip install huggingface_hub")
@@ -91,7 +92,7 @@ def check_hf_cli():
     return True
 
 def check_hf_auth():
-    # 兼容老提示；但不强制退出
+    """Checks the HuggingFace login status (does not force exit)."""
     r = subprocess.run(["huggingface-cli", "whoami"], capture_output=True, text=True)
     if r.returncode != 0:
         print("⚠️  Not logged in to HuggingFace. If the repo is gated, run: huggingface-cli login")
@@ -101,9 +102,10 @@ def check_hf_auth():
 
 # -------------------- API-based list & download --------------------
 def list_repo_files_api(repo_id: str, repo_type: str) -> list[str]:
+    """Lists all files in a HuggingFace repository using the HfApi."""
     from huggingface_hub import HfApi
     api = HfApi()
-    # 优先使用 list_repo_files；老版本用 list_repo_tree 兜底
+    # Prefer list_repo_files; fallback to list_repo_tree for older versions
     try:
         files = api.list_repo_files(repo_id=repo_id, repo_type=repo_type)
         return list(files)
@@ -114,14 +116,14 @@ def list_repo_files_api(repo_id: str, repo_type: str) -> list[str]:
 
 def hf_download_to_dir(repo_id: str, repo_type: str, filename: str, out_dir: Path) -> Path:
     """
-    下载单文件到 out_dir（避免仅留在 cache）：
-    - 首选 hf_hub_download(local_dir=..., local_dir_use_symlinks=False)
-    - 老版本没有 local_dir_use_symlinks 时退化为 copy
+    Downloads a single file to out_dir (ensuring it's not just in the cache):
+    - Prefers hf_hub_download(local_dir=..., local_dir_use_symlinks=False)
+    - Fallbacks to copy if local_dir_use_symlinks is not available in older versions
     """
     from huggingface_hub import hf_hub_download
     out_dir.mkdir(parents=True, exist_ok=True)
     try:
-        # 新版：直接落到 out_dir
+        # New version: Downloads directly into out_dir
         p = hf_hub_download(
             repo_id=repo_id,
             repo_type=repo_type,
@@ -131,7 +133,7 @@ def hf_download_to_dir(repo_id: str, repo_type: str, filename: str, out_dir: Pat
         )
         return Path(p)
     except TypeError:
-        # 老版：只返回 cache 路径；我们再 copy 到 out_dir
+        # Older version: Only returns cache path; we copy it to out_dir
         p_cache = hf_hub_download(repo_id=repo_id, repo_type=repo_type, filename=filename)
         dst = out_dir / Path(filename).name
         if Path(p_cache) != dst:
@@ -139,6 +141,7 @@ def hf_download_to_dir(repo_id: str, repo_type: str, filename: str, out_dir: Pat
         return dst
 
 def download_urls(urls: list[str], out_dir: Path) -> list[Path]:
+    """Downloads files from a list of raw URLs (e.g., GitHub raw) to the output directory."""
     import urllib.request
     out_dir.mkdir(parents=True, exist_ok=True)
     out_paths = []
@@ -157,8 +160,10 @@ def download_urls(urls: list[str], out_dir: Path) -> list[Path]:
     return out_paths
 
 def download_files_via_api(repo_id: str, repo_type: str, includes: list[str], out_dir: Path) -> list[Path]:
+    """Lists files in HF repo and downloads those matching the include patterns."""
     all_files = list_repo_files_api(repo_id, repo_type)
     pats = includes or ["*"]
+    # Find files matching any of the patterns
     matched = sorted({f for f in all_files if any(fnmatch.fnmatch(f, pat) for pat in pats)})
     if not matched:
         print(f"⚠️  No files matched: {pats}")
@@ -178,6 +183,7 @@ def download_files_via_api(repo_id: str, repo_type: str, includes: list[str], ou
 
 # -------------------- Utils --------------------
 def extract_all_zips(root: Path, keep_zip: bool = False):
+    """Recursively finds and extracts all zip files in the given root directory."""
     zips = list(root.rglob("*.zip"))
     if not zips:
         print("ℹ️  No zip files found to extract.")
@@ -187,6 +193,7 @@ def extract_all_zips(root: Path, keep_zip: bool = False):
         try:
             print(f"  - {z}")
             with zipfile.ZipFile(z, "r") as zip_ref:
+                # Extract to the directory where the zip file resides
                 zip_ref.extractall(z.parent)
             if not keep_zip:
                 z.unlink()
@@ -194,6 +201,7 @@ def extract_all_zips(root: Path, keep_zip: bool = False):
             print(f"  ⚠️  Failed to extract {z}: {e}")
 
 def list_datasets():
+    """Prints a formatted list of all available dataset configurations."""
     print("\n" + "="*80)
     print("Available Datasets (file-layer via API)")
     print("="*80 + "\n")
@@ -209,6 +217,7 @@ def list_datasets():
         print()
 
 def download_coco_images(output_dir: Path, split: str = "val2014"):
+    """Downloads and extracts COCO images (val2014 or train2014) using external tools or fallbacks."""
     import zipfile
     urls = {
         "val2014": "http://images.cocodataset.org/zips/val2014.zip",
@@ -226,6 +235,7 @@ def download_coco_images(output_dir: Path, split: str = "val2014"):
     print(f"[download] COCO {split} -> {zip_path}")
     output_dir.mkdir(parents=True, exist_ok=True)
     try:
+        # Use system tools for large file download reliability
         if shutil.which("wget"):
             subprocess.run(["wget", "-O", str(zip_path), url], check=True)
         elif shutil.which("curl"):
@@ -233,6 +243,7 @@ def download_coco_images(output_dir: Path, split: str = "val2014"):
         else:
             print("❌ Neither wget nor curl found.")
             return False
+        
         print(f"[extract] {zip_path}")
         with zipfile.ZipFile(zip_path, "r") as zf:
             zf.extractall(output_dir)
@@ -275,7 +286,7 @@ def main():
     success = 0
     failed = []
 
-    # COCO
+    # COCO Download
     if args.coco:
         print("\n" + "="*80)
         print(f"Downloading COCO {args.coco}")
@@ -285,7 +296,7 @@ def main():
         else:
             failed.append(f"coco_{args.coco}")
 
-    # Datasets
+    # HF Datasets Download
     if args.dataset:
         for name in args.dataset:
             cfg = DATASET_CONFIGS[name]
@@ -297,6 +308,7 @@ def main():
             print("="*80 + "\n")
 
             try:
+                # 1. Download files from HuggingFace API
                 files = download_files_via_api(
                     repo_id=cfg["hf_repo"],
                     repo_type=cfg.get("repo_type", "dataset"),
@@ -304,14 +316,15 @@ def main():
                     out_dir=out_dir,
                 )
 
-                # ---- GitHub fallback（只在 HF 没命中时触发）----
+                # 2. GitHub fallback (triggered only if no files were matched on HF)
                 if (not files) and cfg.get("github_raw"):
-                    print("ℹ️  HF 未匹配到标注文件，改用 GitHub 原始链接下载 ...")
+                    print("ℹ️  No annotation files matched on HF; falling back to GitHub raw links ...")
                     files = download_urls(cfg["github_raw"], out_dir)
 
                 if not files:
                     raise RuntimeError("no files matched or downloaded")
 
+                # 3. Extraction
                 if not args.no_extract:
                     extract_all_zips(out_dir, keep_zip=args.keep_zip)
                 
@@ -321,6 +334,7 @@ def main():
                 print(f"❌ Failed {name}: {e}")
                 failed.append(name)
 
+    # Final Summary
     total = (1 if args.coco else 0) + len(args.dataset or [])
     print("\n" + "="*80)
     print("Download Summary")

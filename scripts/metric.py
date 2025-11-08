@@ -11,14 +11,6 @@ _YESNO_RE = re.compile(r"\b(yes|no)\b", flags=re.IGNORECASE)
 # Metric Implement  #
 # ================= #
 
-# def _normalize_text(s: str) -> str:
-#     s = s.lower().strip()
-#     table = str.maketrans('', '', string.punctuation)
-#     s = s.translate(table)
-#     s = " ".join(s.split())
-#     for art in [" a ", " an ", " the "]:
-#         s = s.replace(art, " ")
-#     return s.strip()
 def _normalize_text(s: str) -> str:
     return (s or "").strip().lower()
 
@@ -34,8 +26,6 @@ def percentile(arr: List[float], p: float) -> float:
     d0 = arr[f]*(c-k)
     d1 = arr[c]*(k-f)
     return d0 + d1
-
-
 
 class ExactMatch(BaseMetric):
     def __init__(self):
@@ -114,6 +104,7 @@ def _yn(s: str):
         return None
     return m.group(1).lower()
 
+# --- MME Accuracy ---
 class MMEAcc(BaseMetric):
     """Per-question accuracy (ACC)"""
     def __init__(self):
@@ -130,6 +121,7 @@ class MMEAcc(BaseMetric):
     def compute(self) -> Dict[str, Any]:
         return {"mme_acc": self.c / self.n if self.n else 0.0, "mme_count_q": self.n}
 
+# --- MME Acc Plus ---
 class MMEAccPlus(BaseMetric):
     """Per-image paired accuracy (ACC+): counts 1 only if both positive and negative questions for the same image_id are correct."""
     def __init__(self):
@@ -147,22 +139,22 @@ class MMEAccPlus(BaseMetric):
         both_true = sum(1 for v in self.pairs.values() if v["pos"] is True and v["neg"] is True)
         return {"mme_acc_plus": (both_true / n_img) if n_img else 0.0, "mme_count_img": n_img}
 
+# --- POPE Accuracy ---
 class POPEAcc(BaseMetric):
     """POPE accuracy metric - simple yes/no accuracy"""
     def __init__(self):
         self.n = 0
         self.correct = 0
         
-    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
-        if not sample.answers:
+    def update(self, sample: Any, pred_text: str, timings_ms: Dict[str, float]):
+        if not hasattr(sample, 'answers') or not sample.answers:
             return
         
         gold = sample.answers[0]  # "yes" or "no"
         if gold not in ("yes", "no"):
             return
             
-        # 从预测文本中提取 yes/no
-        pred = _yn(pred_text)  # 使用已有的 _yn 函数
+        pred = _yn(pred_text)
         
         self.n += 1
         if pred == gold:
@@ -176,17 +168,20 @@ class POPEAcc(BaseMetric):
             "pope_total": self.n
         }
 
+# --- POPE Precision, Recall, F1 ---
 
 class POPEPrecisionRecallF1(BaseMetric):
     """POPE Precision, Recall, F1 (treating 'yes' as positive class)"""
     def __init__(self):
-        self.tp = 0  # true positive: pred=yes, gold=yes
-        self.fp = 0  # false positive: pred=yes, gold=no
-        self.tn = 0  # true negative: pred=no, gold=no
-        self.fn = 0  # false negative: pred=no, gold=yes
+        # initialize Confusion Matrix
+        self.tp = 0  # True Positive: pred=yes, gold=yes
+        self.fp = 0  # False Positive: pred=yes, gold=no
+        self.tn = 0  # True Negative: pred=no, gold=no
+        self.fn = 0  # False Negative: pred=no, gold=yes
+        self.total_pred_yes = 0 #  record yes number
     
-    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
-        if not sample.answers:
+    def update(self, sample: Any, pred_text: str, timings_ms: Dict[str, float]):
+        if not hasattr(sample, 'answers') or not sample.answers:
             return
         
         gold = sample.answers[0]
@@ -197,6 +192,10 @@ class POPEPrecisionRecallF1(BaseMetric):
         if pred not in ("yes", "no"):
             return
         
+        if pred == "yes":
+            self.total_pred_yes += 1
+
+        # update matrix counts
         if pred == "yes" and gold == "yes":
             self.tp += 1
         elif pred == "yes" and gold == "no":
@@ -207,16 +206,30 @@ class POPEPrecisionRecallF1(BaseMetric):
             self.fn += 1
     
     def compute(self) -> Dict[str, Any]:
+        
+        # Total samples
+        total = self.tp + self.fp + self.tn + self.fn
+        
+        # Precision, Recall, F1
         precision = self.tp / (self.tp + self.fp) if (self.tp + self.fp) > 0 else 0.0
         recall = self.tp / (self.tp + self.fn) if (self.tp + self.fn) > 0 else 0.0
         f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        
+        # Accuracy
+        acc = (self.tp + self.tn) / total if total > 0 else 0.0
+        
+        # Yes Ratio
+        yes_ratio = self.total_pred_yes / total if total > 0 else 0.0
         
         return {
             "pope_precision": precision,
             "pope_recall": recall,
             "pope_f1": f1,
+            "pope_acc_derived": acc,
+            "pope_yes_ratio": yes_ratio,
             "pope_tp": self.tp,
             "pope_fp": self.fp,
             "pope_tn": self.tn,
-            "pope_fn": self.fn
+            "pope_fn": self.fn,
+            "pope_total_samples": total
         }
