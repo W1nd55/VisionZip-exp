@@ -193,11 +193,12 @@ repo/
     dataset_download.py
     abstract.py
     timer.py
+    dataset.py     # Customizable
+    metric.py      # Customizable
+    model.py       # Customizable
   config/
     sparsevlm_mme.yaml
-  dataset.py     # Customizable
-  metric.py      # Customizable
-  model.py       # Customizable
+  
 
 datasets/
   mme/MME_Benchmark_release_version/MME_Benchmark/...
