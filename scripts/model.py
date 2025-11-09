@@ -28,15 +28,6 @@ class LlavaVisionZipModel(BaseModel):
         CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
         CLIPAttention.forward = CLIPAttention_forward
 
-        # (Optional) override CLIPVisionTower.forward if you have a custom EXP version
-        try:
-            from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP
-            from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
-            # Patching the CLIP Vision Tower forward method
-            CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP.forward
-        except Exception as e:
-            print("[Warn] EXP forward not found or failed to patch:", e)
-
         # ---- Load model ----
         extra_kwargs = {
             "device_map": "auto",
@@ -67,6 +58,15 @@ class LlavaVisionZipModel(BaseModel):
         # Apply VisionZip wrapper to the model
         from visionzip import visionzip as _visionzip
         model = _visionzip(model, dominant=dominant, contextual=contextual)
+        
+        # (Optional) override CLIPVisionTower.forward if you have a custom EXP version
+        # try:
+        #     from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP
+        #     from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
+        #     # Patching the CLIP Vision Tower forward method
+        #     CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP.forward
+        # except Exception as e:
+        #     print("[Warn] EXP forward not found or failed to patch:", e)
 
         self.tokenizer = tokenizer
         self.model = model
