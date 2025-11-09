@@ -33,14 +33,21 @@ class LlavaVisionZipModel(BaseModel):
 
         # ---- Load model ----
         import platform
+        # Predeclare to allow fallback logic if all attempts fail
+        tokenizer = None
+        model = None
+        image_processor = None
+
+        is_macos = platform.system() == "Darwin"
+        # On macOS / Apple Silicon we avoid device_map="auto" because offloading + fp16 can fail; fall back to eager load on single device
         extra_kwargs = {
-            "device_map": "auto",
+            "device_map": None if is_macos else "auto",
             "torch_dtype": torch.float16,
         }
         quant_attempts: List[Tuple[Dict[str, Any], str]]
-        if platform.system() == "Darwin":
-            # bitsandbytes not supported on macOS arm; skip 4bit/8bit attempts
-            quant_attempts = [({}, "fp16")]
+        if is_macos:
+            # bitsandbytes not supported; fp16 first, then float32 fallback
+            quant_attempts = [({}, "fp16"), ( {"torch_dtype": torch.float32}, "fp32")]
         else:
             quant_attempts = [
                 ({"load_4bit": True,
@@ -49,20 +56,40 @@ class LlavaVisionZipModel(BaseModel):
                 ({"load_8bit": True}, "8bit"),
                 ({}, "fp16"),
             ]
-        for k, v in quant_attempts:
+        for attempt_overrides, tag in quant_attempts:
             try:
-                kwargs = extra_kwargs | k
+                # Allow attempt to override torch_dtype if provided (e.g., fp32 fallback)
+                merged = extra_kwargs | attempt_overrides
                 tokenizer, model, image_processor, _ = load_pretrained_model(
                     model_path=model_path,
                     model_base=None,
                     model_name=get_model_name_from_path(model_path),
-                    **kwargs
+                    **merged
                 )
-                print(f"[load] success with {v}")
+                print(f"[load] success with {tag}")
                 break
             except Exception as e:
-                print(f"[load] try {v} failed:", e)
+                print(f"[load] try {tag} failed:", e)
+                tokenizer = model = image_processor = None
                 continue
+
+        # Final fallback: attempt plain float32 single-device load if still not loaded
+        if model is None:
+            try:
+                print("[load] attempting final float32 fallback (no quant, no device_map)")
+                tokenizer, model, image_processor, _ = load_pretrained_model(
+                    model_path=model_path,
+                    model_base=None,
+                    model_name=get_model_name_from_path(model_path),
+                    device_map=None,
+                    torch_dtype=torch.float32,
+                )
+                print("[load] success with final fp32 fallback")
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to load model '{model_path}' after all quantization / dtype attempts. Last error: {e}\n"
+                    "Suggestions: (1) Ensure sufficient RAM/VRAM; (2) Try a smaller checkpoint; (3) Update torch + transformers; (4) Remove any incompatible quant flags."
+                )
         
         # Apply VisionZip wrapper to the model
         from visionzip import visionzip as _visionzip

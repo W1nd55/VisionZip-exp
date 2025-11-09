@@ -123,6 +123,83 @@ python tools/pope_run_all.py \
 python scripts/evalkit.py --cfg config/sparsezip_mme.yaml --ann_path PATH/TO/ANN.json --output_dir ./runs/test
 ```
 
+### Smoke test (compression only or full generation)
+
+Use the quick-start script on a single image (owl.JPEG provided in `reference/`).
+
+Full attempt (will try to load whole LLaVA; on macOS may fall back to clip-only if load fails):
+```bash
+python scripts/quick_start/qs_sparsezip_smoke.py \
+  --cfg config/sparsezip_mme.yaml \
+  --image reference/owl.JPEG \
+  --prompt "Describe the owl briefly." 
+```
+
+Force clip-only compression mode (bypasses LLM):
+```bash
+python scripts/quick_start/qs_sparsezip_smoke.py \
+  --cfg config/sparsezip_mme.yaml \
+  --image reference/owl.JPEG \
+  --prompt "Describe the owl briefly." \
+  --clip_only
+```
+
+Expected output prints: dynamic K, contextual C, indices of retained dominant tokens.
+
+### Fixed-K configuration example
+
+Disable dynamic-K and set dominant count explicitly:
+```yaml
+model:
+  dominant: 48     # fixed number of dominant tokens
+  contextual: 16
+  sparsezip:
+    dynamic_k: false
+    k_min: 8
+    k_max: 64
+    alphas:
+      attn: 1.0
+      entropy: 0.4
+      mutual: 0.6
+    merging:
+      contextual_num: 16
+```
+
+### Dynamic-K logging snippet
+
+If you want to log K during runs, add inside `_sparsezip_forward` after compression:
+```python
+print(f"[SparseZip] dynamic K={all_indices.shape[1]-1} C={self._vz_comp.cfg.merging.contextual_num}")
+```
+
+### Disabling contextual merging
+
+To keep only dominant tokens (no contextual aggregation), set:
+```yaml
+model:
+  sparsezip:
+    merging:
+      contextual_num: 0   # or 1 if you need at least one aggregate
+```
+The compressor will skip merge logic and return CLS + K dominant tokens only.
+
+### Multi-layer scoring (advanced)
+
+Current integration uses layer -2. To experiment with multi-layer fusion:
+1. Modify `_sparsezip_forward` to collect several `attn_weights` and `hidden_states` layers.
+2. Pass a list to `scoring_layers=[{"attn": attn_l_i, "keys": keys_l_i}, ...]` when calling the compressor.
+3. Increase `num_scoring_layers` in `VisionZipCompressor` constructor.
+
+### Clip-only mode rationale
+
+When full model load is heavy (VRAM limits or macOS fp16 issues), `--clip_only` allows verifying compression logic (scores, dynamic-K) without loading the LLM weights. It exercises CLIP forward + SparseZip only.
+
+### macOS notes
+
+- bitsandbytes 4/8-bit quantization is typically unavailable; loader falls back to fp16 then fp32.
+- Avoid `device_map="auto"` on smaller GPUs to prevent fragmented CPU offload issues; the patched loader now sets `device_map=None` on macOS.
+- Install `protobuf` to avoid tokenizer serialization errors.
+
 ## Design notes & tips
 
 - Dynamic-K vs Fixed-K: For fixed-K experiments, set `sparsezip.dynamic_k: false` and choose a numeric `model.dominant` value. For dynamic-K, set `dynamic_k: true`.
@@ -136,6 +213,8 @@ python scripts/evalkit.py --cfg config/sparsezip_mme.yaml --ann_path PATH/TO/ANN
 - “Import not resolved” in editor: These are environment warnings in the editor for PyTorch/LLaVA; runtime with proper env is fine.
 - No change with YAML: Ensure you used the `sparsezip_mme.yaml` or `sparsezip_pope.yaml`. The compressor reads config from `model.sparsezip`.
 - Fallback path used: If the SparseZip patch fails, the code falls back to the older EXP forward; check console warnings.
+- Dynamic-K always returns same K: Ensure variance isn't degenerate; very uniform images may clamp near `k_min`. Try increasing `alphas.entropy` or lowering `dynk.c`.
+- Memory spikes during merge: Reduce `kmeans_init_factor` or disable `agglomerative`.
 
 ## Changelog (SparseZip)
 

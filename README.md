@@ -180,38 +180,59 @@ The following parameters can **temporarily override** the YAML file via the comm
 
 -----
 
-  ## SparseZip Vision Token Compression
+## SparseZip Vision Token Compression (Updated: 2025-11-08)
 
-  We added an experimental vision token compressor called **SparseZip** that performs dynamic dominant token selection (adaptive K) and hierarchical contextual merging to reduce the number of image patch tokens passed to the LLM while preserving salient content.
+SparseZip is an experimental vision token compressor that performs dynamic dominant token selection (adaptive K) and hierarchical contextual merging to reduce the number of image patch tokens passed to the LLM while preserving salient content.
 
-  Key ideas (see detailed doc for equations and implementation details):
+Key ideas (see the doc for equations and implementation details):
 
-  - Hybrid scoring per patch: attention + entropy + mutual-information proxy (weighted by YAML `alphas`).
-  - Dynamic-K selection: `K = round(log(var(scores)+eps) + c)` (bounded by `k_min`/`k_max`).
-  - Hierarchical merging of non-dominant patches into fewer contextual tokens (k-means init + optional agglomerative refinement).
-  - Optional cross-attn fusion and multi-layer gating (API-ready; cross-attn off by default).
+- Hybrid scoring per patch: attention + entropy + mutual-information proxy (weighted by YAML `alphas`).
+- Dynamic-K selection: `K = round(log(var(scores)+eps) + c)` (bounded by `k_min`/`k_max`).
+- Hierarchical merging of non-dominant patches into fewer contextual tokens (k-means init + optional agglomerative refinement).
+- Optional cross-attn fusion and multi-layer gating (API-ready; cross-attn off by default).
 
-  Code entry points:
+Code entry points:
 
-  - Compressor: `utils/sparsezip.py` (class `VisionZipCompressor`).
-  - Model patch: `scripts/model.py` (patched `CLIPVisionTower.forward` via `_sparsezip_forward`).
-  - YAML examples: `config/sparsezip_mme.yaml`, `config/sparsezip_pope.yaml` (`model.sparsezip` section).
+- Compressor: `utils/sparsezip.py` (class `VisionZipCompressor`).
+- Model patch: `scripts/model.py` (patched `CLIPVisionTower.forward` via `_sparsezip_forward`).
+- YAML examples: `config/sparsezip_mme.yaml`, `config/sparsezip_pope.yaml` (`model.sparsezip` section).
 
-  To enable SparseZip, use one of the `config/sparsezip_*.yaml` files (or add a `sparsezip:` section under `model:` in your own YAML). Example override flags still work for legacy `dominant/contextual`, but when `model.sparsezip.dynamic_k: true` the compressor will adapt K per image.
+How to enable:
 
-  Minimal run example (MME OCR only):
+- Use one of the `config/sparsezip_*.yaml` files, or add a `sparsezip:` section under `model:` in your YAML. Legacy flags `dominant/contextual` still work; with `model.sparsezip.dynamic_k: true` the compressor adapts K per image.
 
-  ```bash
-  python tools/mme_run_all.py \
-    --mme_root /path/to/MME_Benchmark \
-    --out_root ./runs/mme_sparsezip \
-    --cfg config/sparsezip_mme.yaml \
-    --only OCR
-  ```
+Quick smoke test (single image):
 
-  Full documentation: see `docs/README_SPARSEZIP.md`.
+```bash
+python scripts/quick_start/qs_sparsezip_smoke.py \
+  --cfg config/sparsezip_mme.yaml \
+  --image reference/owl.JPEG \
+  --prompt "Describe the owl briefly." \
+  --clip_only   # remove this flag to attempt full LLaVA generation
+```
 
-  -----
+Minimal MME example (OCR only):
+
+```bash
+python tools/mme_run_all.py \
+  --mme_root /path/to/MME_Benchmark \
+  --out_root ./runs/mme_sparsezip \
+  --cfg config/sparsezip_mme.yaml \
+  --only OCR
+```
+
+Fixed-K vs dynamic-K:
+
+- Fixed-K: set `sparsezip.dynamic_k: false` and choose a numeric `model.dominant`.
+- Dynamic-K: set `sparsezip.dynamic_k: true` (uses score variance; clamped by `k_min/k_max`).
+
+macOS note:
+
+- 4/8-bit quantization via bitsandbytes isn’t available on Apple Silicon; we default to fp16. Full LLaVA generation may require installing `protobuf` and avoiding `device_map='auto'` offloading on CPU.
+
+Full documentation: see `docs/README_SPARSEZIP.md`.
+
+-----
 
 ## Directory and Artifact Examples
 
