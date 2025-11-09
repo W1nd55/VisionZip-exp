@@ -160,7 +160,7 @@ python tools/mme_run_all.py   --cfg config/sparsevlm_mme.yaml   --mme_root /home
 The following parameters can **temporarily override** the YAML file via the command line:
 
   - `--dataset [vqa|mme|pope]`
-  - `--model_type [llava_vzip|sparsevlm]`
+  - `--model_type [llava_vzip|sparsezip|sparsevlm]`
   - `--model_path /path/or/hf-id`
   - `--temperature FLOAT`, `--max_new_tokens INT`
   - `--warmup INT`, `--seed INT`, `--limit INT`
@@ -194,12 +194,13 @@ Key ideas (see the doc for equations and implementation details):
 Code entry points:
 
 - Compressor: `utils/sparsezip.py` (class `VisionZipCompressor`).
-- Model patch: `scripts/model.py` (patched `CLIPVisionTower.forward` via `_sparsezip_forward`).
+- Model patch: `scripts/model.py` (`LlavaSparseZipModel` patches `CLIPVisionTower.forward` via `_sparsezip_forward`).
 - YAML examples: `config/sparsezip_mme.yaml`, `config/sparsezip_pope.yaml` (`model.sparsezip` section).
 
 How to enable:
 
-- Use one of the `config/sparsezip_*.yaml` files, or add a `sparsezip:` section under `model:` in your YAML. Legacy flags `dominant/contextual` still work; with `model.sparsezip.dynamic_k: true` the compressor adapts K per image.
+- Set `model.model_type: sparsezip` in YAML (or pass `--model_type sparsezip`) and include a `sparsezip:` section under `model:`. Legacy flags `dominant/contextual` still work; with `model.sparsezip.dynamic_k: true` the compressor adapts K per image.
+- Note: `llava_vzip` model_type now ignores `model.sparsezip` settings. Use `sparsezip` when you want SparseZip compression.
 
 Quick smoke test (single image):
 
@@ -218,7 +219,18 @@ python tools/mme_run_all.py \
   --mme_root /path/to/MME_Benchmark \
   --out_root ./runs/mme_sparsezip \
   --cfg config/sparsezip_mme.yaml \
+  --model_type sparsezip \
   --only OCR
+```
+
+Single run with evalkit (SparseZip):
+
+```bash
+python scripts/evalkit.py \
+  --cfg config/sparsezip_mme.yaml \
+  --model_type sparsezip \
+  --ann_path PATH/TO/ANN.json \
+  --output_dir ./runs/sparsezip_eval
 ```
 
 Fixed-K vs dynamic-K:

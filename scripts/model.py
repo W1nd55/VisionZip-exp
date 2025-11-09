@@ -13,6 +13,227 @@ class LlavaVisionZipModel(BaseModel):
     """
     Wrap your existing single-sample pipeline; keep it deterministic & timed.
     """
+    def __init__(self, model_path: str, dominant: int=54, contextual: int=10, temperature: float=0.2, max_new_tokens: int=256):
+        # Imports necessary for model loading and processing
+        from llava.model.builder import load_pretrained_model
+        from llava.mm_utils import get_model_name_from_path
+        from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
+        # Removed: from llava.mm_utils import tokenizer_image_token (moved to _make_tokenizer_image_token)
+        from llava.conversation import conv_templates
+        
+        # ---- Monkey patches (must be before loading model) ----
+        # Patching CLIP attention and encoder layers for VisionZip functionality
+        from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
+        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
+        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
+        CLIPAttention.forward = CLIPAttention_forward
+
+        # (Optional) override CLIPVisionTower.forward if you have a custom EXP version
+        try:
+            from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP
+            from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
+            # Patching the CLIP Vision Tower forward method
+            CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP.forward
+        except Exception as e:
+            print("[Warn] EXP forward not found or failed to patch:", e)
+
+        # ---- Load model ----
+        extra_kwargs = {
+            "device_map": "auto",
+            "torch_dtype": torch.float16,
+        }
+        # Prefer 4bit, else 8bit, else fp16 loading strategy
+        for k, v in [
+            ({"load_4bit": True,
+            "bnb_4bit_compute_dtype": torch.float16,
+            "bnb_4bit_quant_type": "nf4"}, "4bit"),
+            ({"load_8bit": True}, "8bit"),
+            ({}, "fp16")
+        ]:
+            try:
+                kwargs = extra_kwargs | k
+                tokenizer, model, image_processor, _ = load_pretrained_model(
+                    model_path=model_path,
+                    model_base=None,
+                    model_name=get_model_name_from_path(model_path),
+                    **kwargs
+                )
+                print(f"[load] success with {v}")
+                break
+            except Exception as e:
+                print(f"[load] try {v} failed:", e)
+                continue
+        
+        # Apply VisionZip wrapper to the model
+        from visionzip import visionzip as _visionzip
+        model = _visionzip(model, dominant=dominant, contextual=contextual)
+
+        self.tokenizer = tokenizer
+        self.model = model
+        self.image_processor = image_processor
+        self.conv_templates = conv_templates
+        self.IMAGE_TOKEN_INDEX = IMAGE_TOKEN_INDEX
+        self.DEFAULT_IMAGE_TOKEN = DEFAULT_IMAGE_TOKEN
+        self.DEFAULT_IM_START_TOKEN = DEFAULT_IM_START_TOKEN
+        self.DEFAULT_IM_END_TOKEN = DEFAULT_IM_END_TOKEN
+        self.temperature = temperature
+        self.max_new_tokens = max_new_tokens
+        # Initialize the tokenizer_image_token function with a fallback mechanism
+        self.tokenizer_image_token = self._make_tokenizer_image_token()
+
+        self.model.eval()
+
+    def _make_tokenizer_image_token(self):
+        """Construct a tokenizer_image_token function with fallback."""
+        try:
+            # Try to import the original function from the installed llava package
+            from llava.mm_utils import tokenizer_image_token as _tik
+
+            def _wrap(prompt: str) -> torch.Tensor:
+                return _tik(
+                    prompt,
+                    self.tokenizer,
+                    self.IMAGE_TOKEN_INDEX,
+                    return_tensors="pt",
+                )
+            return _wrap
+        except Exception:
+            # Fallback implementation if llava.mm_utils is not importable
+            print("[Warn] Could not import tokenizer_image_token, using local fallback.")
+            tok = self.tokenizer
+            try:
+                tok_img = tok.convert_tokens_to_ids(self.DEFAULT_IMAGE_TOKEN)
+            except Exception:
+                tok_img = None
+            try:
+                tok_im_start = tok.convert_tokens_to_ids(self.DEFAULT_IM_START_TOKEN)
+            except Exception:
+                tok_im_start = None
+            try:
+                tok_im_end = tok.convert_tokens_to_ids(self.DEFAULT_IM_END_TOKEN)
+            except Exception:
+                tok_im_end = None
+
+            def _local(prompt: str) -> torch.Tensor:
+                # Tokenize the prompt first
+                ids = tok(prompt, return_tensors=None, add_special_tokens=True)["input_ids"]
+                new_ids = []
+                # Replace image placeholder tokens with the special IMAGE_TOKEN_INDEX
+                for t in ids:
+                    if tok_img is not None and t == tok_img:
+                        new_ids.append(self.IMAGE_TOKEN_INDEX)
+                    elif tok_im_start is not None and t == tok_im_start:
+                        continue # Skip start token (if present and configured)
+                    elif tok_im_end is not None and t == tok_im_end:
+                        continue # Skip end token (if present and configured)
+                    else:
+                        new_ids.append(t)
+                return torch.tensor(new_ids, dtype=torch.long)
+            return _local
+
+    def device(self) -> torch.device:
+        """Returns the device of the model."""
+        return self.model.device
+
+    @torch.inference_mode()
+    def prepare_inputs(self, sample: Sample) -> Dict[str, Any]:
+        """Prepare inputs for a single sample.
+        
+        Returns dict with keys:
+          - 'input_ids': torch.LongTensor
+          - 'images': torch.FloatTensor or None
+          - 'load_ms': float
+          - 'preprocess_ms': float
+        """
+        # Image loading and preprocessing
+        image_tensor = None
+        t0 = time.perf_counter()
+        img = Image.open(sample.image_path).convert("RGB") if sample.image_path else None
+        load_ms = (time.perf_counter() - t0)*1000.0
+
+        t1 = time.perf_counter()
+        if img is not None:
+            # Preprocess image into a tensor
+            image_tensor = self.image_processor.preprocess(img, return_tensors='pt')['pixel_values'].half()
+            image_tensor = image_tensor.to(self.device())
+        preprocess_ms = (time.perf_counter() - t1)*1000.0
+
+        # Prompt construction
+        conv = self.conv_templates["llava_v1"].copy()
+        image_placeholder = self.DEFAULT_IMAGE_TOKEN
+        # Handle cases where the model expects start/end tokens around the image token
+        if getattr(self.model.config, "mm_use_im_start_end", False):
+            image_placeholder = self.DEFAULT_IM_START_TOKEN + self.DEFAULT_IMAGE_TOKEN + self.DEFAULT_IM_END_TOKEN
+        
+        # Format the full input string
+        full_user_input = image_placeholder + "\n" + sample.prompt
+        conv.append_message(conv.roles[0], full_user_input)
+        conv.append_message(conv.roles[1], None) # Append an empty assistant message to complete the prompt
+        final_prompt_string = conv.get_prompt()
+
+        # Tokenize the final prompt string using the custom/wrapped function
+        ids = self.tokenizer_image_token(final_prompt_string)
+        # Ensure it's a tensor before unsqueezing
+        if not torch.is_tensor(ids):
+            ids = torch.tensor(ids, dtype=torch.long)
+            
+        input_ids = ids.unsqueeze(0).to(self.device())
+
+        return {
+            "input_ids": input_ids,
+            "images": image_tensor,
+            "load_ms": load_ms,
+            "preprocess_ms": preprocess_ms,
+        }
+
+    @torch.inference_mode()
+    def generate(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """Generates the response and collects timing metrics."""
+        timer = StageTimer(use_cuda=(self.device().type == "cuda"))
+
+        # === Coarse-grained timing ===
+        timer.start("end2end")
+        timer.start("decode")  # Treating the entire generation as the decode phase for coarse timing
+
+        out = self.model.generate(
+            inputs=inputs["input_ids"],
+            images=inputs["images"],
+            max_new_tokens=self.max_new_tokens,
+            use_cache=True,
+            return_dict_in_generate=True,
+            output_scores=False,
+        )
+
+        timer.end("decode")
+        timer.end("end2end")
+
+        out_ids = out.sequences
+        # Decode the generated token IDs
+        text = self.tokenizer.decode(out_ids[0], skip_special_tokens=True).strip()
+
+        # Calculate number of new tokens generated (compatible with both return styles)
+        try:
+            in_len  = inputs["input_ids"].shape[1]
+            seq_len = out_ids.shape[1]
+            gen_len = int(seq_len - in_len) if seq_len >= in_len else int(seq_len)
+        except Exception:
+            # Fallback for token count calculation
+            gen_len = len(self.tokenizer(text, add_special_tokens=False).input_ids)
+
+        timings_ms = {
+            "load_ms":       inputs.get("load_ms", 0.0),
+            "preprocess_ms": inputs.get("preprocess_ms", 0.0),
+            "prefill_ms":    0.0,  # Coarse timing, prefill not separated
+            "decode_ms":     timer.result_ms("decode"),
+            "end2end_ms":    timer.result_ms("end2end"),
+            "num_new_tokens": int(max(gen_len, 0)),
+        }
+        return {"text": text, **timings_ms}
+    
+class LlavaSparseZipModel(BaseModel):
+    """
+    Wrap your existing single-sample pipeline; keep it deterministic & timed.
+    """
     def __init__(self, model_path: str, dominant: int=54, contextual: int=10, temperature: float=0.2, max_new_tokens: int=256, sparsezip_cfg: Optional[dict] = None):
         # Imports necessary for model loading and processing
         from llava.model.builder import load_pretrained_model
