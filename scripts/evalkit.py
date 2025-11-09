@@ -30,6 +30,8 @@ def build_model_llava_vzip(model_cfg: dict):
         "contextual":     int(_get(model_cfg, "contextual", 10)),
         "temperature":    float(_get(model_cfg, "temperature", 0.0)),
         "max_new_tokens": int(_get(model_cfg, "max_new_tokens", 16)),
+        # Pass through sparsezip compressor config if present in YAML
+        "sparsezip_cfg":  _get(model_cfg, "sparsezip", {}),
     }
     return LlavaVisionZipModel(**kwargs)
 

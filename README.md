@@ -180,6 +180,39 @@ The following parameters can **temporarily override** the YAML file via the comm
 
 -----
 
+  ## SparseZip Vision Token Compression
+
+  We added an experimental vision token compressor called **SparseZip** that performs dynamic dominant token selection (adaptive K) and hierarchical contextual merging to reduce the number of image patch tokens passed to the LLM while preserving salient content.
+
+  Key ideas (see detailed doc for equations and implementation details):
+
+  - Hybrid scoring per patch: attention + entropy + mutual-information proxy (weighted by YAML `alphas`).
+  - Dynamic-K selection: `K = round(log(var(scores)+eps) + c)` (bounded by `k_min`/`k_max`).
+  - Hierarchical merging of non-dominant patches into fewer contextual tokens (k-means init + optional agglomerative refinement).
+  - Optional cross-attn fusion and multi-layer gating (API-ready; cross-attn off by default).
+
+  Code entry points:
+
+  - Compressor: `utils/sparsezip.py` (class `VisionZipCompressor`).
+  - Model patch: `scripts/model.py` (patched `CLIPVisionTower.forward` via `_sparsezip_forward`).
+  - YAML examples: `config/sparsezip_mme.yaml`, `config/sparsezip_pope.yaml` (`model.sparsezip` section).
+
+  To enable SparseZip, use one of the `config/sparsezip_*.yaml` files (or add a `sparsezip:` section under `model:` in your own YAML). Example override flags still work for legacy `dominant/contextual`, but when `model.sparsezip.dynamic_k: true` the compressor will adapt K per image.
+
+  Minimal run example (MME OCR only):
+
+  ```bash
+  python tools/mme_run_all.py \
+    --mme_root /path/to/MME_Benchmark \
+    --out_root ./runs/mme_sparsezip \
+    --cfg config/sparsezip_mme.yaml \
+    --only OCR
+  ```
+
+  Full documentation: see `docs/README_SPARSEZIP.md`.
+
+  -----
+
 ## Directory and Artifact Examples
 
 ```

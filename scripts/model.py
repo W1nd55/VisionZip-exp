@@ -13,7 +13,7 @@ class LlavaVisionZipModel(BaseModel):
     """
     Wrap your existing single-sample pipeline; keep it deterministic & timed.
     """
-    def __init__(self, model_path: str, dominant: int=54, contextual: int=10, temperature: float=0.2, max_new_tokens: int=256):
+    def __init__(self, model_path: str, dominant: int=54, contextual: int=10, temperature: float=0.2, max_new_tokens: int=256, sparsezip_cfg: Optional[dict] = None):
         # Imports necessary for model loading and processing
         from llava.model.builder import load_pretrained_model
         from llava.mm_utils import get_model_name_from_path
@@ -22,25 +22,34 @@ class LlavaVisionZipModel(BaseModel):
         from llava.conversation import conv_templates
         
         # ---- Monkey patches (must be before loading model) ----
-        # Patching CLIP attention and encoder layers for VisionZip functionality
+        # Patching CLIP attention/encoder layers. If external 'visionzip' utils are absent, skip gracefully.
         from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
-        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
-        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
-        CLIPAttention.forward = CLIPAttention_forward
+        try:
+            from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward  # type: ignore
+            CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
+            CLIPAttention.forward = CLIPAttention_forward
+        except Exception:
+            print("[info] visionzip.utils not available; proceeding without low-level CLIP patch.")
 
         # ---- Load model ----
+        import platform
         extra_kwargs = {
             "device_map": "auto",
             "torch_dtype": torch.float16,
         }
-        # Prefer 4bit, else 8bit, else fp16 loading strategy
-        for k, v in [
-            ({"load_4bit": True,
-            "bnb_4bit_compute_dtype": torch.float16,
-            "bnb_4bit_quant_type": "nf4"}, "4bit"),
-            ({"load_8bit": True}, "8bit"),
-            ({}, "fp16")
-        ]:
+        quant_attempts: List[Tuple[Dict[str, Any], str]]
+        if platform.system() == "Darwin":
+            # bitsandbytes not supported on macOS arm; skip 4bit/8bit attempts
+            quant_attempts = [({}, "fp16")]
+        else:
+            quant_attempts = [
+                ({"load_4bit": True,
+                  "bnb_4bit_compute_dtype": torch.float16,
+                  "bnb_4bit_quant_type": "nf4"}, "4bit"),
+                ({"load_8bit": True}, "8bit"),
+                ({}, "fp16"),
+            ]
+        for k, v in quant_attempts:
             try:
                 kwargs = extra_kwargs | k
                 tokenizer, model, image_processor, _ = load_pretrained_model(
@@ -82,6 +91,44 @@ class LlavaVisionZipModel(BaseModel):
         self.tokenizer_image_token = self._make_tokenizer_image_token()
 
         self.model.eval()
+
+    # ---------------- Additional helper for SparseZip smoke testing ---------------- #
+    @torch.inference_mode()
+    def encode_image(self, pil_image: Image.Image):
+        """Encodes an image through patched CLIP vision tower and returns (compressed_embeds, stats_dict).
+
+        stats_dict keys:
+          - k_dominant
+          - c_contextual
+          - orig_tokens
+          - compressed_tokens
+          - retained_indices (list)
+        """
+        # Preprocess
+        img_tensor = self.image_processor.preprocess(pil_image, return_tensors='pt')['pixel_values'].to(self.device(), dtype=torch.float16)
+        vt = getattr(self.model, 'mm_projector', None)
+        vt = getattr(vt, 'vision_tower', None)
+        stats = {}
+        if vt is None:
+            raise RuntimeError("Vision tower not found on model; cannot encode image.")
+        # Run patched forward (returns tokens, indices)
+        toks, indices = vt.forward(img_tensor)
+        if indices is not None:
+            # indices: [B, 1+K] with CLS + dominant indices (excluding contextual)
+            k_dom = indices.shape[1] - 1
+            c_ctx = getattr(vt, '_vz_comp', None)
+            try:
+                c_ctx = vt._vz_comp.cfg.merging.contextual_num  # type: ignore
+            except Exception:
+                c_ctx = -1
+            stats = {
+                'k_dominant': k_dom,
+                'c_contextual': c_ctx,
+                'orig_tokens': toks.shape[1],  # includes CLS + K + C
+                'compressed_tokens': toks.shape[1],
+                'retained_indices': indices[0].tolist(),
+            }
+        return toks, stats
 
     def _make_tokenizer_image_token(self):
         """Construct a tokenizer_image_token function with fallback."""
