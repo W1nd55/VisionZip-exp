@@ -25,12 +25,12 @@ Goal: preserve key image content while shrinking sequence length to speed up inf
   - `VisionZipCompressor`: end-to-end routine returning condensed tokens + [CLS, dominant] indices
 
 - Integration into LLaVA: `scripts/model.py`
-  - In `LlavaVisionZipModel.__init__` we patch `CLIPVisionTower.forward` with `_sparsezip_forward`
+  - In `LlavaSparseZipModel.__init__` we patch `CLIPVisionTower.forward` with `_sparsezip_forward`
   - The patch requests attentions/hidden/keys from the CLIP vision tower, runs `VisionZipCompressor`, and returns condensed tokens
   - Compressor config is taken from YAML (see below) and attached to the vision tower as `_sparsezip_cfg`
 
 - YAML plumbing: `scripts/evalkit.py`
-  - Passes `model.sparsezip` to `LlavaVisionZipModel` via `sparsezip_cfg`
+  - For `model_type: sparsezip`, passes `model.sparsezip` to `LlavaSparseZipModel` via `sparsezip_cfg` (choosing `llava_vzip` ignores sparsezip settings)
 
 - Example configs: `config/sparsezip_mme.yaml`, `config/sparsezip_pope.yaml`
 
@@ -41,7 +41,7 @@ Goal: preserve key image content while shrinking sequence length to speed up inf
    - Includes a small `__main__` smoke test for shapes
 
 2) Patched model: `scripts/model.py`
-   - Added `sparsezip_cfg` to `LlavaVisionZipModel` constructor
+  - Added `sparsezip_cfg` to `LlavaSparseZipModel` constructor
    - Patched `CLIPVisionTower.forward` -> `_sparsezip_forward`
    - `_sparsezip_forward` now:
      - Calls CLIP with `output_hidden_states=True, output_attentions=True`
@@ -52,7 +52,7 @@ Goal: preserve key image content while shrinking sequence length to speed up inf
      - Returns condensed tokens (dtype-matched) and indices
 
 3) YAML wiring: `scripts/evalkit.py`
-   - `build_model_llava_vzip` now forwards `model.sparsezip` as `sparsezip_cfg`
+  - Added `build_model_sparsezip`: only `model_type: sparsezip` forwards `model.sparsezip` as `sparsezip_cfg`.
 
 4) New YAMLs:
    - `config/sparsezip_mme.yaml`
@@ -64,7 +64,7 @@ In your YAML under `model:` add a `sparsezip:` section. Example (MME):
 
 ```yaml
 model:
-  model_type: llava_vzip
+  model_type: sparsezip
   model_path: liuhaotian/llava-v1.5-7b
   temperature: 0.0
   max_new_tokens: 16
@@ -120,7 +120,7 @@ python tools/pope_run_all.py \
 
 - Single run via evalkit (any dataset):
 ```bash
-python scripts/evalkit.py --cfg config/sparsezip_mme.yaml --ann_path PATH/TO/ANN.json --output_dir ./runs/test
+python scripts/evalkit.py --cfg config/sparsezip_mme.yaml --model_type sparsezip --ann_path PATH/TO/ANN.json --output_dir ./runs/test
 ```
 
 ### Smoke test (compression only or full generation)

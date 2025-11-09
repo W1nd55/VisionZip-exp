@@ -30,10 +30,25 @@ def build_model_llava_vzip(model_cfg: dict):
         "contextual":     int(_get(model_cfg, "contextual", 10)),
         "temperature":    float(_get(model_cfg, "temperature", 0.0)),
         "max_new_tokens": int(_get(model_cfg, "max_new_tokens", 16)),
-        # Pass through sparsezip compressor config if present in YAML
-        "sparsezip_cfg":  _get(model_cfg, "sparsezip", {}),
     }
     return LlavaVisionZipModel(**kwargs)
+
+def build_model_sparsezip(model_cfg: dict):
+    """Builds the SparseZip-enabled LLaVA model as a distinct model_type.
+
+    This is functionally similar to build_model_llava_vzip but provides a clear
+    entrypoint and selection via model_type: 'sparsezip'.
+    """
+    from scripts.model import LlavaSparseZipModel
+    kwargs = {
+        "model_path":     _get(model_cfg, "model_path"),
+        "dominant":       int(_get(model_cfg, "dominant", 54)),
+        "contextual":     int(_get(model_cfg, "contextual", 10)),
+        "temperature":    float(_get(model_cfg, "temperature", 0.0)),
+        "max_new_tokens": int(_get(model_cfg, "max_new_tokens", 16)),
+        "sparsezip_cfg":  _get(model_cfg, "sparsezip", {}),
+    }
+    return LlavaSparseZipModel(**kwargs)
 
 def build_model_sparsevlm(model_cfg: dict):
     from scripts.model import SparseVLMModel
@@ -50,6 +65,8 @@ def build_model(model_cfg: dict):
     mtype = (_get(model_cfg, "model_type", "llava_vzip") or "llava_vzip").lower()
     if mtype == "llava_vzip":
         return build_model_llava_vzip(model_cfg)
+    if mtype == "sparsezip":
+        return build_model_sparsezip(model_cfg)
     if mtype == "sparsevlm":
         return build_model_sparsevlm(model_cfg)
     raise ValueError(f"Unknown model_type: {mtype}")
@@ -84,7 +101,7 @@ if __name__ == "__main__":
 
     # Arguments only passed to override YAML values (None = no override)
     # Override 'model' section
-    parser.add_argument("--model_type", type=str, default=None, choices=["llava_vzip", "sparsevlm"])
+    parser.add_argument("--model_type", type=str, default=None, choices=["llava_vzip", "sparsezip", "sparsevlm"]) 
     parser.add_argument("--model_path", type=str, default=None)
     parser.add_argument("--dominant", type=int, default=None)
     parser.add_argument("--contextual", type=int, default=None)
