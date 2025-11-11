@@ -1,7 +1,7 @@
 \documentclass[11pt]{article}
 
 % Change "review" to "final" for final version
-\usepackage[review]{acl}
+\usepackage[final]{acl}
 
 % Standard package includes
 \usepackage{times}
@@ -27,30 +27,62 @@
 % For better table formatting
 \usepackage{booktabs}
 
-\title{Reimplementation and Fine-Grained Analysis of Visual Token Sparsification Methods}
 
-\author{}
+
 
 \begin{document}
+
+% Kept old title since re-implementation seems like a limitation analysis, i.e., part of a paper. So, I structure document like a paper
+%\title{Reimplementation and Fine-Grained Analysis of Visual Token Sparsification Methods}
+
+\title{SparseZip: Text-Aware Visual Token Selection and Compression for Efficient Vision-Language Model Inference}
+
+\author{Alexander Geppert \\
+  University of Wisconsin-Madison \\
+  \texttt{ageppert@wisc.edu} \\ \And
+  Qinxinghao Chen \\
+  University of Wisconsin-Madison \\
+  \texttt{qchen463@wisc.edu} \\ \AND
+  Shivam Mittal \\
+  University of Wisconsin-Madison \\
+  \texttt{smittal39@wisc.edu} \\ \And
+  Najib Akram Maheen Aboobacker \\
+  University of Wisconsin-Madison \\
+  \texttt{maheenabooba@wisc.edu} \\}
+
 \maketitle
 
 \begin{abstract}
-Visual token sparsification represents a critical optimization technique for reducing computational overhead in Vision-Language Models (VLMs) while maintaining performance. This work presents a comprehensive reimplementation and fine-grained analysis of two state-of-the-art methods: VisionZip, a text-agnostic approach utilizing CLIP attention weights, and SparseVLM, a text-aware method employing cross-modal attention. Through systematic evaluation on the POPE dataset with 6,823 samples, we demonstrate that both methods achieve near-equivalent performance (Accuracy: 80.3\% vs 80.6\%) at 64-token sparsification (88.9\% reduction), despite fundamentally different architectural designs. Our analysis reveals that text-aware token selection provides marginal advantages in precision (0.7\%) but fails to meaningfully improve recall, suggesting that for object existence tasks, question-adaptive selection may not provide substantial benefits over question-agnostic approaches.
+Recent advances in Vision-Language Models (VLMs) have improved performance, but at the cost of longer visual token sequences, increasing inference latency. Prior analyses reveal substantial redundancy in visual embeddings produced by popular vision encoders such as CLIP and SigLIP. To address this inefficiency, we propose SparseZip, a unified and text-guided visual token selection and compression framework that reduces computational overhead while preserving semantic fidelity. For each prompt, SparseZip (i) predicts an adaptive token retention budget based on image complexity, (ii) ranks tokens via a joint metric combining visual self-attention and text-conditioned cross-attention, and (iii) condenses the top-ranked tokens into a compact, semantically rich representation.
+
+\textbf{Deliverables for Hw4: } This work presents a comprehensive re-implementation and fine-grained analysis of two state-of-the-art methods: VisionZip (text-agnostic, compression prior to forward pass) and SparseVLM (text-aware, compression during forward pass). Through evaluation on POPE (6,823 samples) and MME (2,374 samples), we find near-equivalent performance on POPE (80.3\% vs 80.6\%) but VisionZip outperforms SparseVLM on MME (76.28\% vs 73.21\%). These methods differ in two confounded dimensions, making it unclear which factor drives performance differences. Our proposed SparseZip framework combines text-aware selection with compression prior to the forward pass, enabling future ablation studies to isolate these effects.
+
 \end{abstract}
+
 
 \section{Introduction}
 
-Modern Vision-Language Models (VLMs) typically process 576 visual tokens per image, representing a significant computational bottleneck. Visual token sparsification methods aim to reduce this number while preserving model performance, with recent approaches demonstrating that 88.9\% token reduction (from 576 to 64 tokens) can be achieved with minimal performance degradation. However, the optimal strategy for token selection remains an open question: should tokens be selected based on intrinsic visual importance independent of the query, or should selection adapt to the specific question being asked?
+Vision-Language Models (VLMs) incur high computational costs from processing numerous redundant visual tokens, which contribute less informational density than textual counterparts and increase inference latency. Previous methods such as FastV \cite{Chen2024FastV}, SparseVLM \cite{zhang2024sparsevlm}, and VisionZip \cite{yang2024visionzip} address this by compressing visual representations, pruning low-relevance regions, or restructuring cross-attention to limit redundant vision-text interactions. However, the optimal strategy for token selection remains an open question: should tokens be selected based on intrinsic visual importance independent of the query, or should selection adapt to the specific question being asked?
+%However, text-guided visual token selection at inference time, in addition to compression, remains unexplored. 
 
-This work addresses this question through a rigorous comparative analysis of two representative approaches: VisionZip \cite{yang2024visionzip}, which employs text-agnostic token selection based on CLIP attention patterns, and SparseVLM \cite{zhang2024sparsevlm}, which utilizes text-aware selection through cross-modal attention. By integrating, debugging, and modifying the official implementations of both methods, we successfully configured them for evaluation under identical experimental conditions. This process allowed us to provide insights into the mechanisms, trade-offs, and limitations of each approach.
+\textbf{Specific to Hw4: } This work addresses this question through a rigorous comparative analysis of VisionZip \cite{yang2024visionzip} (text-agnostic token selection) and SparseVLM \cite{zhang2024sparsevlm} (text-aware selection). By reproducing and aligning both implementations under identical conditions, we provide insights into mechanisms, trade-offs, and limitations. Our contributions are: (1) successful replication with careful attention to implementation details, (2) comprehensive evaluation on POPE (6,823 samples) and MME (2,374 samples), and (3) fine-grained analysis of token selection mechanisms and performance characteristics across diverse task types.
 
-Our contributions are threefold: (1) a successful replication of the methods, paying careful attention to implementation details and necessary modifications for compatibility, (2) a comprehensive evaluation on the POPE dataset with 6,823 samples, reporting multiple metrics, and (3) a fine-grained analysis of token selection mechanisms, performance characteristics, and failure modes.
+\section{Related Works}
+\textbf{CLIP ViT/ResNet Image Encoder.} Early vision-language systems established the now standard recipe of aligning images and text through contrastive pretraining on paired data collected from the internet. CLIP \cite{radford2021CLIP} paired a ViT/ResNet image encoder with a Transformer text encoder and optimized a bidirectional InfoNCE objective to align matched pairs and push mismatches apart. This architecture proved that large, weakly supervised datasets are sufficient for learning transferable visual concepts that generalize to zero-shot tasks. This paradigm provided the foundation for modern Vision-Language Models: frozen or lightly tuned vision encoders whose patch-token outputs feed compact embeddings into a language model.
 
-\section{Method Overview}
+\textbf{Designing Training-Free Methods for Reducing VLM Inference Latency} As VLMs evolved to instruction-following pipelines, the computational bottleneck shifted to the number of visual tokens passed into the Language Model. Naively feeding all patch tokens incurs high attention costs. This has driven research on training-free efficiency methods that maintain accuracy while reducing token count. These systems typically (i) compress visual tokens, (ii) select relevant image regions via pruning, or (iii) restructure cross-attention to reduce redundant interactions. 
+
+\textbf{Pruning Vision Tokens with Small Attention Scores during Forward Pass of LLM.}  FastV \citep{Chen2024FastV} dynamically prunes less-important visual tokens in deeper layers of the LLM (based on attention scores) to accelerate inference with minimal accuracy loss . While FastV utilizes both self-attention between visual tokens and cross-attention with text tokens, its pruning occurs only after several expensive layers, meaning substantial computation is still performed on redundant tokens.
+
+\textbf{Pruning Vision Tokens with Small Cross-Attention Prior to LLM.} SparseVLM \citep{zhang2024sparsevlm} introduces a training-free mechanism that prunes redundant visual tokens using text-guided cross-attention signals. This method selectively routes computation toward text-relevant regions while maintaining global dependencies, offering a lightweight alternative that maintains task performance without retraining. 
+
+\textbf{Pruning Vision Tokens with Small Self-Attention Prior to LLM.} VisionZip \citep{yang2024visionzip} targets redundancy before tokens reach the language model, using CLIP encoder self-attention to estimate token importance. Tokens with low self-attention are discarded or merged, achieving substantial speed-ups (up to 8× faster prefilling) with minimal accuracy degradation. However, VisionZip does not incorporate text-conditioning, making its selection entirely text-agnostic. 
+
+\section{Methodology}
 
 \subsection{VisionZip: Text-Agnostic Token Selection}
 
-VisionZip implements a two-stage token selection mechanism that operates entirely within the vision encoder, independent of the language component. The method is grounded in the observation that CLS token attention weights in deep layers of the CLIP encoder capture global visual saliency.
+VisionZip implements a two-stage token selection mechanism that operates entirely within the vision encoder and independent of the language component. The method exploits the observation that CLS-token attention weights in deeper CLIP layers capture global visual saliency. 
 
 VisionZip operates in two stages as described in the original paper \cite{yang2024visionzip}. In Stage 1, the method selects 54 dominant tokens by computing CLS token attention weights at layer 22 of the CLIP encoder and selecting the top-k tokens with highest attention scores. The CLS token attention naturally captures global visual saliency, prioritizing prominent objects and high-contrast regions.
 
@@ -58,15 +90,40 @@ In Stage 2, VisionZip selects 10 contextual tokens from the remaining tokens thr
 
 \subsection{SparseVLM: Text-Aware Progressive Token Selection}
 
-SparseVLM implements a fundamentally different approach: token selection adapts dynamically to the input question by leveraging cross-modal attention between visual and text tokens. The method applies progressive sparsification at multiple decoder layers, allowing the model to gradually refine token selection based on question-specific requirements.
+SparseVLM follows a fundamentally different approach: token selection adapts dynamically to the input question using cross-modal attention between visual and text tokens.
+Cross-modal attention is computed at decoder layers 2, 6, and 15; the relevance of each visual token is determined by averaging attention scores from all text tokens to that visual token. Tokens with the highest scores are retained, and the remainder are merged through attention-weighted pooling
 
-SparseVLM computes cross-modal attention between visual tokens and text tokens at decoder layers 2, 6, and 15. The method uses standard scaled dot-product attention \cite{vaswani2017attention} to compute attention weights between text token queries and visual token keys. The relevance of each visual token to the question is determined by averaging attention scores from all text tokens to that visual token, effectively measuring how much the question ``attends'' to each visual region.
-
-The method applies progressive sparsification: for 64 total tokens, it retains 66 tokens at layer 2, 30 tokens at layer 6, and 17 tokens at layer 15. At each layer, tokens with highest text-visual relevance scores are selected via top-k selection, and remaining tokens are merged into selected tokens using attention-weighted pooling. This progressive approach allows the model to maintain rich visual information in early layers while gradually focusing on question-relevant tokens.
+This progressive sparsification schedule (66 → 30 → 17 tokens) enables early layers to preserve broad context and later layers to focus on question-specific regions. However, the method still performs forward passes over many redundant tokens before pruning, which can limit real-time efficiency.
 
 \subsection{Key Differences}
 
-The fundamental difference between VisionZip and SparseVLM lies in their token selection basis. VisionZip is text-agnostic: it selects tokens based purely on visual features (CLS attention weights) without considering the input question. This means the same set of tokens is selected for an image regardless of what question is asked. SparseVLM is text-aware: it adapts token selection to each specific question by using cross-modal attention between visual and text tokens. This allows the method to focus on different image regions depending on what is being asked, potentially providing advantages for questions requiring attention to less prominent visual regions.
+The core distinction between VisionZip and SparseVLM lies in their basis of token importance and selection. VisionZip relies solely on visual self-attention, producing a static subset per image. SparseVLM relies on cross-attention, generating a dynamic subset per question. Consequently, VisionZip favors consistent global coverage, whereas SparseVLM favors question-dependent selectivity. Additionally, VisionZip performs token compression once prior to inputting visual representations to the language model component, while SparseVLM performs iterative compression of visual tokens at each layer during the forward pass. 
+
+\subsection{Proposed Methodology}
+
+To combine the efficiency of VisionZip with the adaptability of SparseVLM, we propose SparseZip, a hybrid attention and adaptive-budget framework. \textbf{Hybrid Attention:} VisionZip uses only self-attention, while SparseVLM uses cross-attention but prunes during the forward pass, introducing noise. SparseZip computes a joint score (SelfAttention + CrossAttention) before compression, ensuring textual queries influence token importance without LLM-level computation. \textbf{Dynamic $K$ Selection:} We adapt retention based on image complexity using $K = log(Var(S_d))+c$, where $S_d$ is the scoring function. Images with high feature variance retain more tokens; simpler scenes retain fewer.
+
+\subsection{Planned Experiments}
+
+\textbf{Baseline Comparison} Test whether our Text-Specific Visual Token Selection and Compression framework outperforms the text-agnostic baseline given by VisionZip. 
+
+\textbf{Dynamic K Comparison} We will compare the performance difference when selecting a fixed number of top tokens and dynamically selecting $K$ top tokens. We will also perform an efficiency analysis regarding the dominant visual token reduction and performance drop.  
+
+\textbf{Hierarchical Contextual Token Merging} For non-dominant tokens, we will try to replace naive averaging with hierarchical clustering (e.g., K-means, spectral methods). At each stage, clusters are merged iteratively with attention-weighted averaging, ensuring important context is preserved before reduction. We will evaluate whether hierarchical or one-shot merging performs better. 
+
+\textbf{Multi-dimensional Dominant Token Scoring} Instead of relying solely on attention, we will experiment with alternative scoring functions and use a hybrid token importance score. For example: 
+\begin{equation}
+  \label{eq:hybrid_importance_score}
+  s_{d} = \alpha_1*s_{attn} + \alpha_2*H_{entropy} + \alpha_3*I_{mutual}
+\end{equation}
+% This an example cross-reference to Equation~\ref{eq:hybrid_importance_score}.
+where $s_{attn}$ is the mean attention score, $H_{entropy}$ measures feature variability, and $I_{mutual}$ represents mutual information with other tokens. The scoring reflects not only the salience of each token but also its contextual contribution to the overall semantics of the image. 
+
+We will also extract token features from multiple transformer layers (e.g., L-2, L-4, L-8, L-12) and fuse them via learned gating weights. 
+
+We will perform ablation tests on all used multi-dimensional scoring components.
+
+\textbf{Additional Datasets} Following the VisionZip paper's evaluation protocol, we plan to evaluate on additional benchmarks such as MMBench and ScienceQA to assess performance across diverse task types and ensure comprehensive evaluation coverage.
 
 \section{Experimental Setup}
 
@@ -74,7 +131,17 @@ The fundamental difference between VisionZip and SparseVLM lies in their token s
 
 The Polling-based Object Probing Evaluation (POPE) dataset \cite{li2023pope} is specifically designed to evaluate object hallucination in VLMs. The dataset consists of yes/no questions about object existence, where positive cases refer to objects that exist in the image, and negative cases refer to objects that do not exist.
 
-The dataset contains 6,823 total questions divided into three categories: Adversarial (2,274 samples), Popular (2,274 samples), and Random (2,275 samples). Images are sourced from the COCO val2014 dataset. The LLaVA model zoo reports that \texttt{Vanilla LLaVA-1.5-7B} achieves 85.9\% accuracy on POPE with full token retention (576 tokens), which we use as a reference baseline (not re-evaluated in this work).
+The dataset contains 6,823 total questions divided into Adversarial (2,274 samples), Popular (2,274 samples), and Random (2,275 samples), with images sourced from the COCO val2014 dataset. The LLaVA model zoo reports that \texttt{Vanilla LLaVA-1.5-7B} achieves 85.9\% accuracy on POPE with full token retention (576 tokens), which we use as a reference baseline (not re-evaluated in this work). This dataset primarily measures binary recognition fidelity rather than reasoning or open-ended text generation. 
+
+\subsection{Dataset: MME}
+
+The Multi-Modal Evaluation (MME) benchmark \cite{fu2023mme} provides a comprehensive evaluation framework for VLMs across 14 diverse tasks, divided into two categories: perception tasks (10 categories) and cognition tasks (4 categories). The dataset contains 2,374 total questions covering a wide range of visual understanding capabilities.
+
+\textbf{Perception Tasks} (10 categories, 2,114 questions): These tasks evaluate low-level visual perception capabilities including object existence (60 questions), counting (60), spatial reasoning (position: 60, color: 60), scene understanding (scene: 400, landmark: 400, artwork: 400), and specialized recognition (posters: 294, celebrity: 340, OCR: 40).
+
+\textbf{Cognition Tasks} (4 categories, 260 questions): These tasks evaluate high-level reasoning capabilities including commonsense reasoning (140 questions), numerical calculation (40), text translation (40), and code reasoning (40).
+
+Unlike POPE, which focuses solely on binary object existence questions, MME evaluates diverse answer formats (yes/no, numbers, text, etc.) and requires both perceptual and cognitive understanding. This makes MME a more comprehensive benchmark for assessing VLM capabilities across different task types. For future work, we plan to evaluate on additional benchmarks used in the VisionZip paper (e.g., MMBench, ScienceQA) to ensure comprehensive coverage across diverse vision-language tasks.
 
 \subsection{Model Configuration}
 
@@ -82,100 +149,141 @@ We use \texttt{LLaVA-1.5-7B} \cite{liu2023llava} (\texttt{liuhaotian/llava-v1.5-
 
 \subsection{Hardware and Software Environment}
 
-All experiments were conducted on the CS department's instructional GPU cluster, specifically on the \texttt{instgpu-01.cs.wisc.edu} machine. This server is equipped with eight NVIDIA GeForce RTX 2080 Ti GPUs, each with approximately 11 GB of VRAM. Our experiments were primarily executed on GPUs 6 and 7 of this shared machine.
+All experiments were conducted on the CS department's instructional GPU cluster (\texttt{instgpu-01.cs.wisc.edu}) using NVIDIA GeForce RTX 2080 Ti GPUs (11 GB VRAM). We used Python 3.10 with \texttt{PyTorch} 2.1.2, \texttt{transformers}, and \texttt{accelerate}. Due to memory constraints (7B LLaVA requires ~14 GB in float16), we used \texttt{device\_map="auto"} to offload some layers to CPU. Average inference time was ~2 seconds per sample, resulting in ~3 hours for POPE and ~1.5 hours for MME per method.
 
-The software environment was built on a Linux operating system with CUDA version 12.4 and NVIDIA driver version 550.67. We used Python 3.10 with \texttt{PyTorch} 2.1.2. Key libraries included \texttt{transformers}, \texttt{bitsandbytes} for 4-bit quantization attempts, and \texttt{accelerate} for model handling. Due to the 11 GB memory limitation of the RTX 2080 Ti GPUs when loading the 7B parameter \texttt{LLaVA} model (which requires ~14 GB in float16), we utilized the \texttt{device\_map="auto"} feature from the \texttt{accelerate} library. This configuration automatically offloaded some model layers to the CPU to prevent out-of-memory errors, a necessary deviation for running these large models on the available hardware.
 
 \subsection{Evaluation Metrics}
 
-We report four standard classification metrics: Accuracy, Precision, Recall, and F1 Score. Metrics are calculated separately for each category (adversarial, popular, random) and then averaged to obtain overall performance. Since the VisionZip paper reports accuracy as the primary metric for POPE, we use accuracy as our primary comparison metric to ensure fair comparison with published results.
+For the POPE dataset, we report four standard classification metrics: Accuracy, Precision, Recall, and F1 Score. Metrics are calculated separately for each category (adversarial, popular, random) and then averaged to obtain overall performance. Since the VisionZip paper reports accuracy as the primary metric for POPE, we use accuracy as our primary comparison metric to ensure proper comparison with published results.
+
+For the MME benchmark, we report Overall Accuracy, Perception Accuracy, and Cognition Accuracy, following the standard MME evaluation protocol. Overall Accuracy measures performance across all 14 task categories, while Perception and Cognition Accuracies provide insights into performance on low-level visual perception versus high-level reasoning tasks.
+
+
 
 \section{Results}
 
-\subsection{Overall Performance}
+\subsection{POPE Results}
 
-Table~\ref{tab:results} presents comprehensive results on the POPE dataset.
+
+Table~\ref{tab:pope_results} presents results on the POPE dataset. Both VisionZip and SparseVLM achieve comparable accuracy (80.3\% vs 80.6\%), demonstrating that aggressive token reduction to 64 tokens preserves most task-critical information. The original VisionZip paper reports 77.0\% for VisionZip and 75.1\% for SparseVLM at 64 tokens; our higher scores likely stem from evaluation-protocol differences or implementation updates. The results confirm that text-aware and text-agnostic pruning perform equivalently for binary existence detection. 
 
 \begin{table*}
 \centering
 \small
-\begin{tabular}{lcccc}
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Method} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1 Score} \\
+\textbf{Method} & \textbf{Paper Accuracy} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1 Score} \\
 \midrule
-VisionZip & 0.803 & 0.945 & 0.649 & 0.769 \\
-         & (80.3\%) & (94.5\%) & (64.9\%) & (76.9\%) \\
+VisionZip & 0.77 & 0.803 & 0.945 & 0.649 & 0.769 \\
+         & (77\%) & (80.3\%) & (94.5\%) & (64.9\%) & (76.9\%) \\
 \midrule
-SparseVLM & 0.806 & 0.952 & 0.650 & 0.772 \\
-          & (80.6\%) & (95.2\%) & (65.0\%) & (77.2\%) \\
+SparseVLM & 0.751 & 0.806 & 0.952 & 0.650 & 0.772 \\
+          & (75.1\%) & (80.6\%) & (95.2\%) & (65.0\%) & (77.2\%) \\
 \midrule
-\textbf{Difference} & -0.003 & -0.007 & -0.001 & -0.003 \\
-                    & (-0.3\%) & (-0.7\%) & (-0.1\%) & (-0.3\%) \\
+\textbf{Difference} & -0.019 & +0.003 & +0.007 & +0.001 & +0.003 \\
+                    & (-1.9\%) & (+0.3\%) & (+0.7\%) & (+0.1\%) & (+0.3\%) \\
 \bottomrule
 \end{tabular}
 \caption{Performance comparison on POPE dataset. Both methods achieve near-equivalent performance with minimal differences across all metrics.}
-\label{tab:results}
+\label{tab:pope_results}
 \end{table*}
 
-\subsection{Comparison with Published Results}
+\subsection{MME Results}
 
-The VisionZip paper reports ``raw benchmark accuracy'' for the POPE dataset at a 64-token configuration \cite{yang2024visionzip}. Their findings show VisionZip achieving 77.0\% accuracy and SparseVLM achieving 75.1\% accuracy. This establishes a performance hierarchy where VisionZip outperforms SparseVLM by 1.9 percentage points.
+Table~\ref{tab:mme_results} presents results on the MME benchmark. VisionZip outperforms SparseVLM across all metrics: 76.28\% vs 73.21\% overall accuracy (3.07\% gain), with improvements in perception (3.03\%) and cognition (3.46\%) tasks. The original VisionZip paper reports raw MME scores of 1690 for VisionZip and 1505 for SparseVLM at 64 tokens (corresponding to 90.8\% and 80.8\% relative to Vanilla performance respectively); our higher scores likely stem from evaluation-protocol differences or implementation updates, similar to the POPE results.
 
-Our reimplementation yields different results in two key aspects. First, our measured accuracies (VisionZip: 80.3\%, SparseVLM: 80.6\%) are notably higher than those reported in the paper. This discrepancy may stem from differences in the evaluation protocol, minor implementation details, or the specific hardware environment. Second, the performance ranking is reversed: in our experiments, SparseVLM surpasses VisionZip by a margin of 0.3 percentage points. While this margin is minimal and likely within the bounds of experimental variance, it contradicts the paper's conclusion. The key takeaway is that our reimplementation finds the two methods to have virtually equivalent performance on this task.
+\begin{table*}
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Method} & \textbf{Paper Overall} & \textbf{Overall} & \textbf{Perception} & \textbf{Cognition} & \textbf{Total Correct} \\
+\midrule
+VisionZip & 1690 (90.8\%) & 76.28\% & 78.05\% & 61.92\% & 1811/2374 \\
+\midrule
+SparseVLM & 1505 (80.8\%) & 73.21\% & 75.02\% & 58.46\% & 1738/2374 \\
+\midrule
+\textbf{Difference} & -185 (-10.0\%) & -3.07\% & -3.03\% & -3.46\% & -73 \\
+\bottomrule
+\end{tabular}
+\caption{Performance comparison on MME benchmark. VisionZip outperforms SparseVLM across all metrics, with the largest gap in cognition tasks (3.46\%).}
+\label{tab:mme_results}
+\end{table*}
 
-\section{Fine-Grained Analysis}
+\textbf{Per-Category Analysis:} VisionZip outperforms SparseVLM in 13 of 14 categories, with largest advantages in landmark (6.00\%), artwork (5.00\%), color (5.00\%), code reasoning (5.00\%), and commonsense reasoning (4.29\%). SparseVLM only outperforms VisionZip in count (3.33\% advantage). The consistent gap suggests compression prior to the forward pass maintains cleaner representations than progressive in-loop pruning.  
+
+\section{Analysis} 
 
 \subsection{Token Selection Mechanism Analysis}
 
-\textbf{VisionZip's Design:}
+VisionZip uses a two-stage selection mechanism: (1) 54 dominant tokens selected via CLS attention at CLIP layer 22, capturing visually salient regions, and (2) 10 contextual tokens via similarity-based clustering for spatial coverage. Token selection is question-independent, prioritizing efficiency but limiting adaptability.
 
-VisionZip's two-stage selection mechanism is designed to balance global saliency with spatial diversity. The method uses CLS token attention weights at layer 22 of the CLIP encoder, operating on the principle that deep-layer CLS attention aggregates global visual information. By design, the dominant token selection (54 tokens) should capture visually salient regions—typically objects, high-contrast areas, and text—while the contextual token selection (10 tokens) through similarity-based clustering should provide spatial coverage of less prominent regions.
-
-A key characteristic of this approach is that token selection is question-independent: the same 64 tokens are selected for an image regardless of what is being asked. This design choice prioritizes efficiency but theoretically limits the method's ability to adapt when questions focus on background or non-salient objects.
-
-\textbf{SparseVLM's Design:}
-
-SparseVLM employs a fundamentally different strategy: progressive, question-aware token selection across multiple decoder layers. The method computes cross-modal attention between text and visual tokens, allowing token selection to adapt dynamically based on the specific question. The progressive schedule (66 tokens at layer 2, 30 at layer 6, 17 at layer 15) is designed to maintain rich visual information early in processing while gradually focusing on question-relevant regions.
-
-Theoretically, this text-aware approach should provide advantages when questions require attention to specific regions that differ from global visual saliency patterns. However, our empirical results show that both methods achieve nearly identical performance (80.3\% vs 80.6\% accuracy), suggesting that for POPE's object existence questions—which primarily query about prominent, visually salient objects—the adaptability of text-aware selection does not translate to measurable performance gains.
+SparseVLM employs progressive, question-aware selection across decoder layers (66→30→17 tokens at layers 2, 6, 15), computing cross-modal attention to adapt to each question. However, both methods achieve nearly identical performance on POPE (80.3\% vs 80.6\%), suggesting confounded factors: text-aware selection may provide benefits, but progressive compression during the forward pass may introduce noise from irrelevant tokens, offsetting those benefits. Our proposed SparseZip framework combines text-aware selection with compression prior to the forward pass to isolate these effects. 
 
 \subsection{Precision-Recall Trade-off Analysis}
 
 Both methods exhibit a \textbf{high precision, moderate recall} profile, indicating conservative prediction strategies. This is particularly important for hallucination detection, where false positives are costly.
 
-\textbf{Precision Analysis:} VisionZip achieves 94.5\% precision, while SparseVLM achieves 95.2\% (0.7\% higher). The text-aware selection provides more relevant visual tokens, leading to slightly higher confidence in predictions and reducing false positives.
+VisionZip achieves 94.5\% precision / 64.9\% recall, while SparseVLM achieves 95.2\% precision / 65.0\% recall. This pattern indicates that both prioritize precision at the cost of completeness, consistent with compression-induced information loss.
 
-\textbf{Recall Analysis:} Both methods achieve nearly identical recall (64.9\% vs 65.0\%), indicating that at 64 tokens (88.9\% reduction), both struggle equally with detecting all relevant objects. This suggests that 64 tokens may be insufficient to capture all object information needed for high recall, and neither selection strategy can overcome the fundamental information loss from aggressive sparsification.
+The near-identical recall implies that aggressive 64-token retention bounds performance ceiling regardless of selection strategy. Future work could explore gradual token-budget scaling (64→128) to map the precision–recall frontier more precisely.
 
 \subsection{Theoretical Limitations and Failure Modes}
 
-Based on the architectural designs and our quantitative results, we can identify theoretical limitations for each method.
-
-\textbf{VisionZip's Potential Limitations:} The question-independent selection means that when POPE asks about objects in background regions, the CLS attention-based selection may prioritize foreground tokens over the queried object. Questions about small or non-salient objects may fail if those objects are not among the 64 selected tokens. The high precision (94.5\%) but moderate recall (64.9\%) we measured is consistent with this conservative selection strategy.
-
-\textbf{SparseVLM's Potential Limitations:} The progressive reduction schedule (66→30→17 tokens) means that if critical visual information is not captured at layer 2, later layers cannot recover it. The method's reliance on cross-modal attention means that poor question representations could lead to suboptimal token selection. Despite the theoretical advantage of question-aware selection, SparseVLM achieves only marginally higher precision (95.2\%) and nearly identical recall (65.0\%) compared to VisionZip, suggesting these theoretical advantages may not materialize for simple object existence queries.
+VisionZip's question-independent selection may prioritize foreground tokens over background objects, causing failures when questions focus on non-salient regions. The high precision (94.5\%) but moderate recall (64.9\%) reflects this conservative strategy. SparseVLM's progressive reduction (66→30→17 tokens) means critical information missed at layer 2 cannot be recovered later. Despite theoretical advantages, SparseVLM achieves only marginally higher precision (95.2\%) and nearly identical recall (65.0\%) on POPE, suggesting irrelevant tokens in early layers may confuse the model.
 
 \subsection{Theoretical Implications}
 
-Our experimental findings suggest that for object existence tasks like POPE, which primarily focus on prominent objects, text-aware token selection does not provide substantial advantages over text-agnostic selection. This is because POPE questions typically query about visually salient objects that are naturally captured by both selection strategies. However, we hypothesize that for more complex tasks requiring spatial reasoning, attribute understanding, or multi-object relationships, text-aware selection may provide advantages by allowing the model to focus on different image regions depending on the question.
+Our comparison reveals two orthogonal design dimensions: (1) \textbf{text-agnostic vs text-aware} token selection, and (2) \textbf{compression prior vs during} the forward pass. VisionZip employs text-agnostic selection with compression prior to the forward pass, while SparseVLM employs text-aware selection with compression during the forward pass. These factors are confounded in our current comparison, making it unclear which factor drives the observed performance differences.
 
-At 64 tokens (88.9\% reduction from 576), both methods achieve approximately 80\% accuracy, compared to the baseline performance. The absolute performance drop suggests that 64 tokens capture most but not all critical information needed for accurate object existence detection. Further token reduction would likely degrade performance more significantly, suggesting that 64 tokens may be near the lower bound for maintaining reasonable performance on this task.
+For object-existence tasks (POPE), both methods achieve nearly identical performance (80.3\% vs 80.6\%), suggesting that neither text-awareness nor compression timing provides substantial advantages for simple binary questions about visually salient objects. For diverse reasoning tasks (MME), VisionZip outperforms SparseVLM (76.28\% vs 73.21\%). This performance gap could stem from either factor: text-agnostic selection may preserve broader visual context needed for diverse questions, or compression prior to the forward pass may avoid noise from irrelevant tokens that propagate through early decoder layers.
+
+We hypothesize that the noise introduced by including irrelevant tokens in early layers during the forward pass (as in SparseVLM) may explain the performance degradation on MME. However, without an ablation study that independently varies text-awareness and compression timing, we cannot definitively attribute the performance difference to either factor. Our proposed SparseZip framework addresses this limitation by combining text-aware selection with compression prior to the forward pass, enabling future work to isolate the independent effects of each design choice.
+
+At 64 tokens (roughly 89\% reduction) both methods maintain roughly 80\% accuracy on POPE, implying this token count lies near the minimal threshold for preserving core visual semantics.
+
+\subsection{Cross-Dataset Analysis: POPE vs MME}
+
+Our evaluation on both POPE and MME reveals an important contrast: while both methods achieve near-equivalent performance on POPE (80.3\% vs 80.6\%), VisionZip demonstrates better performance on MME (76.28\% vs 73.21\%). This discrepancy could stem from either of two confounded design differences: (1) text-agnostic vs text-aware selection, or (2) compression prior vs during the forward pass. The performance gap on MME may be due to noise introduced by including irrelevant vision tokens during the forward pass (as in SparseVLM), but it could also be due to the benefits of text-agnostic selection preserving broader visual context. Without controlled ablation studies, we cannot determine the independent contribution of each factor. 
+
+On POPE, both methods achieve virtually identical performance, suggesting neither text-awareness nor compression timing provides substantial advantages for simple binary questions about visually salient objects. On MME, VisionZip outperforms SparseVLM (76.28\% vs 73.21\%), which could stem from either text-agnostic selection preserving broader context or compression prior to the forward pass avoiding noise from irrelevant tokens. Without controlled ablation studies, we cannot determine which factor drives this difference. This limitation motivates our proposed SparseZip framework, which combines text-aware selection with compression prior to the forward pass, enabling future ablation studies to disentangle these effects.
+
 
 \section{Limitations}
 
-This study has several limitations: (1) evaluation on POPE only—results may not generalize to other benchmarks, (2) single sparsification level—only 64 tokens evaluated, (3) accuracy values higher than paper—our accuracy (80.3\%, 80.6\%) exceeds paper's (77.0, 75.1\%), suggesting potential differences in evaluation protocol, (4) implementation variance—subtle differences may affect results, and (5) hardware constraints—the 7B LLaVA model requires approximately 14GB in float16, exceeding the 11GB capacity of our RTX 2080 Ti GPUs. Both methods used \texttt{device\_map="auto"} which likely offloaded some model layers to CPU. This memory constraint may have affected absolute performance, though both methods were evaluated under identical conditions.
+This study has several limitations: (1) single sparsification level—only 64 tokens evaluated, (2) accuracy values higher than paper on POPE—our accuracy (80.3\%, 80.6\%) exceeds the VisionZip paper's reported values (77.0\% for VisionZip, 75.1\% for SparseVLM), suggesting potential differences in evaluation protocol, (3) implementation variance—subtle differences may affect results, (4) hardware constraints—the 7B LLaVA model requires approximately 14GB in float16, exceeding the 11GB capacity of our RTX 2080 Ti GPUs. Both methods used \texttt{device\_map="auto"} which likely offloaded some model layers to CPU. This memory constraint may have affected absolute performance, though both methods were evaluated under identical conditions, and (5) \textbf{confounded design factors}—VisionZip and SparseVLM differ in two orthogonal dimensions (text-agnostic vs text-aware selection, and compression prior vs during forward pass). Without controlled ablation studies that independently vary these factors, we cannot determine which factor drives the observed performance differences. This limitation motivates our proposed SparseZip framework, which enables future work to isolate these effects.
 
-\section{Conclusion}
+\section{Conclusion for Hw4}
 
-This work presents a comprehensive reimplementation and fine-grained analysis of two visual token sparsification methods: VisionZip (text-agnostic) and SparseVLM (text-aware). Through rigorous evaluation on the POPE dataset with 6,823 samples, we demonstrate that both methods achieve near-equivalent performance (Accuracy: 80.3\% vs 80.6\%) at 64-token sparsification, despite fundamentally different architectural designs.
+This work presents a comprehensive re-implementation and fine-grained analysis of VisionZip (text-agnostic) and SparseVLM (text-aware). Through evaluation on POPE (6,823 samples) and MME (2,374 samples), we find near-equivalent performance on POPE (80.3\% vs 80.6\%) but VisionZip outperforms SparseVLM on MME (76.28\% vs 73.21\%).
 
-Our analysis reveals that for object existence tasks, text-agnostic and text-aware selection achieve essentially identical performance, suggesting that question-adaptive selection may not provide substantial benefits for simple binary questions about prominent objects. However, SparseVLM's text-aware selection provides marginal precision advantage (0.7\%), indicating better alignment between visual tokens and question requirements. Both methods struggle equally with recall at high sparsification levels, suggesting that 64 tokens may be insufficient regardless of selection strategy.
+These methods differ in two orthogonal dimensions: (1) text-agnostic vs text-aware selection, and (2) compression prior vs during forward pass. These factors are confounded, making it unclear which drives performance differences. On POPE, neither factor provides substantial advantages. On MME, the performance gap could stem from either text-agnostic selection preserving broader context or compression prior to forward pass avoiding noise from irrelevant tokens. Our proposed SparseZip framework combines text-aware selection with compression prior to the forward pass, enabling future ablation studies to isolate these effects and determine optimal design choices. 
 
-These findings suggest that for object existence tasks, the choice between text-agnostic and text-aware selection may not significantly impact performance. However, for more diverse question types requiring attention to different image regions, text-aware selection may provide advantages. Future work should evaluate both methods on more diverse benchmarks to test this hypothesis.
+\section{Plan of Proposed Ideas and Work Division}
 
-\section*{Acknowledgments}
+\subsection{Timeline and Milestones}
 
-We thank the authors of VisionZip and SparseVLM for making their code publicly available, enabling this reimplementation study.
+Our implementation plan is structured into four phases, with specific milestones leading to the final report submission. We have completed Phase 0 (reimplementation and baseline evaluation) and are currently beginning Phase 1.
+
+\textbf{Phase 0: Reimplementation and Baseline Evaluation (COMPLETED)} We have successfully reimplemented both VisionZip and SparseVLM, integrated them with the LLaVA-1.5-7B model, and conducted comprehensive evaluation on both POPE (6,823 samples) and MME (2,374 samples) datasets. We have established evaluation pipelines, comparison scripts, and baseline performance metrics. This foundation enables us to properly compare our proposed SparseZip method against these baselines.
+
+\textbf{Phase 1: Core SparseZip Implementation (Weeks 1-2 of remaining 5 weeks)} We will implement the foundational SparseZip framework, including the hybrid attention mechanism (combining self-attention and cross-attention) and the dynamic $K$ selection algorithm. This phase will establish the baseline implementation that can be evaluated on both POPE and MME datasets. Milestone: A working SparseZip implementation that successfully compresses visual tokens and can be evaluated end-to-end, with initial results showing it matches or exceeds baseline performance.
+
+\textbf{Phase 2: Experimental Components (Weeks 3-4)} We will implement and evaluate the two main experimental components: Hierarchical Contextual Token Merging and Multi-Dimensional Dominant Token Scoring. Each component will be tested independently through ablation studies to isolate their contributions. Milestone: Complete ablation study results showing the impact of each component on performance and efficiency, with clear understanding of which components provide the most benefit.
+
+\textbf{Phase 3: Integration and Final Evaluation (Week 5)} We will integrate the best-performing components from Phase 2 into the core framework, conduct comprehensive evaluation on both POPE and MME benchmarks, and perform comparative analysis against VisionZip and SparseVLM baselines. Milestone: Final SparseZip implementation with comprehensive evaluation results and analysis ready for final report submission.
+
+\subsection{Deliverables for Final Report}
+
+By the final report deadline, we plan to deliver: (1) a complete SparseZip implementation with integrated hybrid attention and dynamic $K$ selection, (2) comprehensive evaluation results on POPE and MME datasets (with potential extension to additional benchmarks like MMBench and ScienceQA following VisionZip's evaluation protocol) comparing SparseZip against VisionZip and SparseVLM baselines, (3) detailed ablation studies quantifying the contribution of each component (hierarchical merging, multi-dimensional scoring, dynamic $K$), (4) efficiency analysis measuring inference latency, memory usage, and token reduction rates, and (5) fine-grained analysis of failure modes, performance characteristics, and trade-offs between efficiency and accuracy.
+
+\subsection{Work Division}
+
+\textbf{Alexander Geppert \& Shivam Mittal:} Alexander will implement hybrid attention mechanism and dynamic $K$ selection algorithm. Shivam will implement hierarchical clustering-based contextual token merging (K-means or spectral clustering). Both will collaborate on integration, evaluation on POPE and MME datasets, and efficiency profiling.
+
+\textbf{Qinxinghao Chen \& Najib Akram Maheen Aboobacker:} Qinxinghao will implement hybrid token importance scoring (attention, entropy, mutual information) and multi-layer feature fusion. Najib will conduct ablation studies to isolate scoring dimension contributions. Both will collaborate on integration and evaluation on POPE and MME datasets.
+
+\textbf{Integration and Final Analysis:} All four members will collaborate on integrating best-performing components, conducting final comparative evaluation, and writing the final report through weekly sync meetings.
 
 % Bibliography
 \begin{thebibliography}{}
@@ -205,7 +313,24 @@ Liu, H., Li, C., Wu, Q., \& Lee, Y. J. (2023).
 \newblock Visual Instruction Tuning.
 \newblock \textit{Advances in Neural Information Processing Systems (NeurIPS)}.
 
+\bibitem{radford2021CLIP}
+Radford A. Wook Kim J., Hallacy C. Ramesh A., Goh G., Agarwal S., Sastry G., Askell A., Mishkin P., Clark J., Krueger G., \& Sutskever I. (2021).
+\newblock Learning Transferable Visual Models From Natural Language Supervision.
+\newblock \textit{International conference on machine learning. pp. 8748–8763. PMLR (2021)}.
+
+\bibitem{Chen2024FastV}
+Chen L., Zhao H., Lui T., Bai S., Lin J., Shou C., \& Chang B. (2024).
+\newblock An Image is Worth 1/2 Tokens After Layer 2: Plug-
+and-PLay Acceleration for VLLM Inference.
+\newblock \textit{arXiv preprint arXiv:2403.06764}.
+
+\bibitem{fu2023mme}
+Fu, C., Chen, P., Shen, Y., Qin, Y., Zhang, M., Lin, X., \ldots \& Qiao, Y. (2023).
+\newblock MME: A Comprehensive Evaluation Benchmark for Multimodal Large Language Models.
+\newblock \textit{arXiv preprint arXiv:2306.13394}.
+
 \end{thebibliography}
+
 
 \end{document}
 

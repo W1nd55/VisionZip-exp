@@ -16,7 +16,14 @@ ENV/
 # Large dataset folders
 val2014/
 playground/
+# Exclude playground but allow MME-specific paths
 **/playground/
+# Un-ignore MME directory hierarchy (must un-ignore all parent dirs)
+!models/
+!models/LLaVA/
+!models/LLaVA/playground/
+!models/LLaVA/playground/eval/
+!models/LLaVA/playground/eval/MME/
 playground/eval/pope/val2014/
 **/val2014/
 **/coco/
@@ -24,6 +31,13 @@ playground/eval/pope/val2014/
 # Large answer/output directories
 **/answers/
 models/LLaVA/playground/eval/*/answers/
+
+# MME Dataset: Exclude images but include GT and results
+# (Exceptions must come AFTER general exclusions above)
+models/LLaVA/playground/eval/MME/MME_Benchmark_release_version/*/images/
+!models/LLaVA/playground/eval/MME/MME_Benchmark_release_version/*/questions_answers_YN/
+!models/LLaVA/playground/eval/MME/eval_tool/answers/
+!models/LLaVA/playground/eval/MME/answers/
 
 # Model checkpoints and weights
 *.bin
@@ -58,6 +72,10 @@ models/*/checkpoints/
 .ipynb_checkpoints
 *.ipynb
 
+# LaTeX files (exclude temporary/working files, but keep main report)
+*.tex
+!hw4_report.tex
+
 # IDE
 .vscode/
 .idea/
@@ -73,6 +91,11 @@ Thumbs.db
 
 # Answer files (large outputs)
 **/answers/*.jsonl
+# But include MME prediction files (overrides above)
+# Note: Must also override models/LLaVA/.gitignore which excludes *.jsonl
+!models/LLaVA/playground/eval/MME/answers/
+!models/LLaVA/playground/eval/MME/answers/*.jsonl
+!**/MME/answers/*.jsonl
 
 # Temporary files
 *.tmp
