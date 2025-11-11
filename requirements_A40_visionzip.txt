@@ -1,0 +1,22 @@
+--extra-index-url https://pypi.org/simple
+--index-url https://download.pytorch.org/whl/cu121
+torch==2.1.2
+torchvision==0.16.2
+torchaudio==2.1.2
+
+protobuf
+datasets
+
+# flash-attn 2.x on A40:
+# conda install -c nvidia cuda-toolkit=12.1 -y
+# export TORCH_CUDA_ARCH_LIST="8.6"
+# export FLASH_ATTENTION_SKIP_SM90=1
+# pip install "flash-attn==2.5.6" --no-build-isolation --no-cache-dir
+# pip install -e models/LLaVA --no-deps
+
+# visionzip installation:
+# modify setup.py:
+# "packages=find_packages(include=["visionzip", "visionzip.*"])"
+# pip install -e models/VisionZip --no-deps
+
+

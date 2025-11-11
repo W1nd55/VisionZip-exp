@@ -1,0 +1,17 @@
+model:
+  model_type: llava_vzip
+  model_path: liuhaotian/llava-v1.5-7b
+  temperature: 0.0
+  max_new_tokens: 16
+
+  # VisionZip specific
+  dominant: 54
+  contextual: 10
+
+runner:
+  dataset: mme
+  ann_path: null
+  output_dir: ./eval_outputs/
+  warmup: 3
+  seed: 42
+  limit: null
