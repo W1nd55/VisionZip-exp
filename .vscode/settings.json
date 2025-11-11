@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "/home/w1nd519994824/project/VisionZip-exp/models/LLaVA",
+        "/home/w1nd519994824/project/VisionZip-exp/models/VisionZip"
+    ],
+    "python.defaultInterpreterPath": "/home/w1nd519994824/project/miniconda3/envs/visionzip/bin/python" 
+}

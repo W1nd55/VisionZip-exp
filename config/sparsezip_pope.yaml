@@ -1,0 +1,39 @@
+# SparseZip configuration for POPE
+
+model:
+  model_type: llava_vzip
+  model_path: liuhaotian/llava-v1.5-7b
+  temperature: 0.0
+  max_new_tokens: 16
+
+  dominant: 54  # dynamic-K can override internally
+  contextual: 16  # baseline contextual tokens
+
+  sparsezip:
+    dynamic_k: true
+    k_min: 8
+    k_max: 64
+    dynk:
+      c: 8.0
+      eps: 1.0e-6
+
+    alphas:
+      attn: 1.0
+      entropy: 0.4
+      mutual: 0.6
+    tau_feat: 0.2
+    tau_sim: 0.1
+    cross_beta: 0.0
+
+    merging:
+      contextual_num: 16
+      kmeans_init_factor: 2.0
+      kmeans_iters: 10
+      agglomerative: true
+
+runner:
+  dataset: pope
+  ann_path: null
+  output_dir: ./outputs_eval
+  warmup: 5
+  seed: 42

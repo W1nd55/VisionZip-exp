@@ -1,10 +1,12 @@
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'models', 'VisionZip')))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'models', 'LLaVA')))
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..')) 
 
-from visionzip import visionzip
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from llava.model.builder import load_pretrained_model
 from llava.mm_utils import get_model_name_from_path
 from llava.eval.run_llava import eval_model
@@ -13,6 +15,7 @@ from llava.mm_utils import tokenizer_image_token, KeywordsStoppingCriteria
 from PIL import Image
 from llava.conversation import conv_templates, SeparatorStyle, Conversation
 import torch
+from visionzip import visionzip
 
 model_path = "liuhaotian/llava-v1.5-7b"
 
@@ -24,16 +27,15 @@ tokenizer, model, image_processor, context_len = load_pretrained_model(
 ## VisoinZip retains 54 dominant tokens and 10 contextual tokens
 model = visionzip(model, dominant=54, contextual=10)
 
-# ----------------------------
 ## Inference
-image_file = "/u/q/i/qinxinghao/project/VisionZip-exp/reference/owl.JPEG"
+image_file = "/home/w1nd519994824/VisionZip-exp/reference/owl.JPEG"
 prompt = "Describe the image in detail"
 
 image = Image.open(image_file).convert('RGB')
 image_tensor = image_processor.preprocess(image, return_tensors='pt')['pixel_values'].half()
 image_tensor = image_tensor.to(model.device)
 
-conv = conv_templates["vicuna_v1.1"].copy()
+conv = conv_templates["llava_v1"].copy()
 image_placeholder = DEFAULT_IMAGE_TOKEN # '<image>'
 
 if model.config.mm_use_im_start_end:
