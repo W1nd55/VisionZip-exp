@@ -3,5 +3,4 @@ __pycache__/
 logs/
 datasets/
 .vscode/
-datasets/
 eval_results/
