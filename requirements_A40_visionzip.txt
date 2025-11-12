@@ -6,6 +6,7 @@ torchaudio==2.1.2
 
 protobuf
 datasets
+huggingface_hub
 
 # flash-attn 2.x on A40:
 # conda install -c nvidia cuda-toolkit=12.1 -y
