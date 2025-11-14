@@ -21,6 +21,22 @@ from pathlib import Path
 
 # ===================== Dataset Configs =====================
 DATASET_CONFIGS = {
+    "coco_val": {
+        "is_special": "coco",
+        "split": "val2014",
+        "description": "COCO 2014 Validation Images",
+        "size": "~8 GB",
+        "note": "Downloaded directly via URL (wget/curl/urllib).",
+        "out_subdir": "coco", # Optional output subdirectory name
+    },
+    "coco_train": {
+        "is_special": "coco",
+        "split": "train2014",
+        "description": "COCO 2014 Training Images",
+        "size": "~13 GB",
+        "note": "Downloaded directly via URL (wget/curl/urllib).",
+        "out_subdir": "coco", # Optional output subdirectory name
+    },
     "pope": {
         "hf_repo": "lmms-lab/POPE",
         "repo_type": "dataset",
@@ -207,7 +223,8 @@ def list_datasets():
     print("="*80 + "\n")
     for name, cfg in DATASET_CONFIGS.items():
         print(f"📦 {name}")
-        print(f"   Repo: {cfg['hf_repo']} ({cfg.get('repo_type','dataset')})")
+        if 'hf_repo' in cfg:
+            print(f"   Repo: {cfg['hf_repo']} ({cfg.get('repo_type','dataset')})")
         print(f"   Desc: {cfg['description']}")
         if 'size' in cfg: print(f"   Size: {cfg['size']}")
         if 'note' in cfg: print(f"   Note: {cfg['note']}")
@@ -258,10 +275,10 @@ def download_coco_images(output_dir: Path, split: str = "val2014"):
 # -------------------- Main CLI --------------------
 def main():
     parser = argparse.ArgumentParser(description="File-layer dataset downloader (HF API)")
-    parser.add_argument("--dataset", nargs="+", choices=list(DATASET_CONFIGS.keys()))
+    dataset_choices = list(DATASET_CONFIGS.keys())
+    parser.add_argument("--dataset", nargs="+", choices=dataset_choices)
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--output_dir", type=str, default="./datasets")
-    parser.add_argument("--coco", type=str, choices=["val2014", "train2014"])
     parser.add_argument("--skip-auth-check", action="store_true")
     parser.add_argument("--no-extract", action="store_true")
     parser.add_argument("--keep-zip", action="store_true")
@@ -270,9 +287,9 @@ def main():
     if args.list:
         list_datasets()
         return
-    if not args.dataset and not args.coco:
+    if not args.dataset: # check --dataset
         parser.print_help()
-        print("\n❌ Error: Please specify --dataset or --coco or --list")
+        print("\n❌ Error: Please specify --dataset or --list")
         return
 
     if not check_hf_cli():
@@ -286,28 +303,32 @@ def main():
     success = 0
     failed = []
 
-    # COCO Download
-    if args.coco:
-        print("\n" + "="*80)
-        print(f"Downloading COCO {args.coco}")
-        print("="*80 + "\n")
-        if download_coco_images(output_root / "coco", args.coco):
-            success += 1
-        else:
-            failed.append(f"coco_{args.coco}")
-
-    # HF Datasets Download
+    # HF/COCO Datasets Download
     if args.dataset:
         for name in args.dataset:
             cfg = DATASET_CONFIGS[name]
-            out_dir = output_root / name
+            
+            # configure output directory
+            out_subdir = cfg.get("out_subdir", name)
+            out_dir = output_root / out_subdir
+            
             print("\n" + "="*80)
             print(f"Dataset: {name}")
-            print(f"Repo: {cfg['hf_repo']}  (type={cfg.get('repo_type','dataset')})")
+            if 'hf_repo' in cfg:
+                print(f"Repo: {cfg['hf_repo']}  (type={cfg.get('repo_type','dataset')})")
             print(f"Output: {out_dir}")
             print("="*80 + "\n")
 
             try:
+                # coco special handling
+                if cfg.get("is_special") == "coco":
+                    if download_coco_images(output_root / out_subdir, cfg["split"]):
+                        print(f"✅ Done: {name}")
+                        success += 1
+                    else:
+                        raise RuntimeError("COCO download failed")
+                    continue # COCO download handled, skip to next
+
                 # 1. Download files from HuggingFace API
                 files = download_files_via_api(
                     repo_id=cfg["hf_repo"],
@@ -335,7 +356,7 @@ def main():
                 failed.append(name)
 
     # Final Summary
-    total = (1 if args.coco else 0) + len(args.dataset or [])
+    total = len(args.dataset or [])
     print("\n" + "="*80)
     print("Download Summary")
     print("="*80)
