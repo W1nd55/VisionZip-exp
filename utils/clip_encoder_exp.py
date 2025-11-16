@@ -101,8 +101,10 @@ class CLIPVisionTower_VisionZip_EXP(nn.Module):
             ## New dominant token selection based on new scroe metric
         # —— hybrid scoring —— 
         use_hybrid = True
+        alpha_tuple = getattr(self, '_vision_zip_alpha', (1.2, 0.9, 0.2))
+        # print(f"[debug] Using alpha: {alpha_tuple}")
         scores = (hybrid_token_score(attn_weights, hidden_states, metric,
-                                    alpha=(1.0, 0.4, 0.6),
+                                    alpha=alpha_tuple,
                                     tau_feat=0.2, tau_sim=0.1) if use_hybrid else attn_weights[:, :, 0, 1:].mean(dim=1))
         topk_indices = scores.topk(dominant_num, dim=1).indices + 1
 

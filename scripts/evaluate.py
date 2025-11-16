@@ -63,8 +63,6 @@ class Evaluator:
             timings = {
                 "load_ms": out.get("load_ms", 0.0),
                 "preprocess_ms": out.get("preprocess_ms", 0.0),
-                "prefill_ms": out.get("prefill_ms", 0.0),
-                "decode_ms": out.get("decode_ms", 0.0),
                 "end2end_ms": out.get("end2end_ms", 0.0),
                 "num_new_tokens": out.get("num_new_tokens", 0),
             }

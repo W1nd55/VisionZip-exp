@@ -7,6 +7,8 @@
 protobuf
 datasets
 huggingface_hub
+scikit-optimize
+pandas
 
 # flash-attn 2.x on A40:
 # conda install -c nvidia cuda-toolkit=12.1 -y
@@ -14,6 +16,7 @@ huggingface_hub
 # export FLASH_ATTENTION_SKIP_SM90=1
 # pip install "flash-attn==2.5.6" --no-build-isolation --no-cache-dir
 # pip install -e models/LLaVA --no-deps
+
 
 # visionzip installation:
 # modify setup.py:

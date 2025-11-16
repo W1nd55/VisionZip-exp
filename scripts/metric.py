@@ -87,13 +87,9 @@ class DelayStats(BaseMetric):
         # tok/s
         if any('num_new_tokens' in x for x in self.logs) and any(('decode_ms' in x) or ('decode' in x) for x in self.logs):
             toks = sum(x.get('num_new_tokens', 0) for x in self.logs)
-            decode_ms = sum(
-                 (x.get('decode_ms', 0.0) if 'decode_ms' in x else x.get('decode', 0.0))
-                 for x in self.logs
-            )
+            decode_ms = out.get("e2e_avg(ms)", 0.0)
             tps = toks / (decode_ms/1000.0 + 1e-9)
             out["decode_tok_per_s"] = tps
-            out["tok/s"] = tps
         return out
     
 def _yn(s: str):
@@ -113,7 +109,7 @@ class MMEAcc(BaseMetric):
     def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
         gold = _normalize_text(sample.answers[0]) if sample.answers else None
         if gold not in ("yes","no"):
-            return
+            raise ValueError(f"MMEAcc expected 'yes'/'no' answers, got: {gold}")
         pred = _yn(pred_text)
         self.n += 1
         if pred == gold:
@@ -137,7 +133,7 @@ class MMEAccPlus(BaseMetric):
     def compute(self) -> Dict[str, Any]:
         n_img = len(self.pairs)
         both_true = sum(1 for v in self.pairs.values() if v["pos"] is True and v["neg"] is True)
-        return {"mme_acc_plus": (both_true / n_img) if n_img else 0.0, "mme_count_img": n_img}
+        return {"mme_acc_plus": (both_true / n_img) if n_img else 0.0, "mme_count_pair": n_img}
 
 # --- POPE Accuracy ---
 class POPEAcc(BaseMetric):
@@ -169,7 +165,6 @@ class POPEAcc(BaseMetric):
         }
 
 # --- POPE Precision, Recall, F1 ---
-
 class POPEPrecisionRecallF1(BaseMetric):
     """POPE Precision, Recall, F1 (treating 'yes' as positive class)"""
     def __init__(self):

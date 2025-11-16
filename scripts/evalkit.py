@@ -5,6 +5,16 @@ import argparse
 import random
 import torch
 
+import sys
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+visionzip_parent_dir = os.path.join(current_dir, os.pardir, 'models/VisionZip')
+if visionzip_parent_dir not in sys.path:
+    sys.path.insert(0, os.path.abspath(visionzip_parent_dir))
+
+
+
 from scripts.evaluate import Evaluator
 from scripts.metric import DelayStats
 
@@ -33,6 +43,21 @@ def build_model_llava_vzip(model_cfg: dict):
     }
     return LlavaVisionZipModel(**kwargs)
 
+def build_model_llava_vzip_hybrid_attn(model_cfg: dict):
+    from scripts.model import LlavaVisionZipModelHybridAttn
+    alpha_list = _get(model_cfg, "vision_zip_alpha", [1.2, 0.9, 0.2])
+    alpha_config = tuple(float(x) for x in alpha_list)
+    
+    kwargs = {
+        "model_path":     _get(model_cfg, "model_path"),
+        "dominant":       int(_get(model_cfg, "dominant", 54)),
+        "contextual":     int(_get(model_cfg, "contextual", 10)),
+        "temperature":    float(_get(model_cfg, "temperature", 0.0)),
+        "max_new_tokens": int(_get(model_cfg, "max_new_tokens", 16)),
+        "alpha_config": alpha_config,
+    }
+    return LlavaVisionZipModelHybridAttn(**kwargs)
+
 def build_model_sparsezip(model_cfg: dict):
     """Builds the SparseZip-enabled LLaVA model as a distinct model_type.
 
@@ -40,6 +65,8 @@ def build_model_sparsezip(model_cfg: dict):
     entrypoint and selection via model_type: 'sparsezip'.
     """
     from scripts.model import LlavaSparseZipModel
+    alpha_list = _get(model_cfg, "vision_zip_alpha", [1.2, 0.9, 0.2])
+    alpha_config = tuple(float(x) for x in alpha_list)
     kwargs = {
         "model_path":     _get(model_cfg, "model_path"),
         "dominant":       int(_get(model_cfg, "dominant", 54)),
@@ -47,6 +74,7 @@ def build_model_sparsezip(model_cfg: dict):
         "temperature":    float(_get(model_cfg, "temperature", 0.0)),
         "max_new_tokens": int(_get(model_cfg, "max_new_tokens", 16)),
         "sparsezip_cfg":  _get(model_cfg, "sparsezip", {}),
+        "alpha_config": alpha_config,
     }
     return LlavaSparseZipModel(**kwargs)
 
@@ -65,6 +93,8 @@ def build_model(model_cfg: dict):
     mtype = (_get(model_cfg, "model_type", "llava_vzip") or "llava_vzip").lower()
     if mtype == "llava_vzip":
         return build_model_llava_vzip(model_cfg)
+    if mtype == "llava_vzip_hybridattn":
+        return build_model_llava_vzip_hybrid_attn(model_cfg)
     if mtype == "sparsezip":
         return build_model_sparsezip(model_cfg)
     if mtype == "sparsevlm":

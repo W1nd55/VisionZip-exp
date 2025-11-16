@@ -1,3 +1,4 @@
+# rembemer to set conda env for sparsevlm before running this script
 import os
 import sys
 
