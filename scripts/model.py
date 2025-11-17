@@ -407,29 +407,29 @@ class LlavaSparseZipModel(LlavaModel):
             ScoringAlphas, DynamicKConfig, MergingConfig,
             CompressionConfig, VisionZipCompressor,
         )
-        # 1) 先做 VisionZip 的 monkey-patch（已经包含 hybrid attention）
+        # 1) First apply VisionZip monkey-patching (already includes hybrid attention)
         LlavaVisionZipModel._apply_visionzip_monkey_patches()
 
-        # 2) 正常加载 LLaVA
+        # 2) Normally load LLaVA
         super().__init__(
             model_path=model_path,
             temperature=temperature,
             max_new_tokens=max_new_tokens,
         )
 
-        # 3) 调用 visionzip 构建 VisionZip 框架
+        # 3) Call visionzip to construct the VisionZip framework
         from visionzip import visionzip as _visionzip
         self.model = _visionzip(self.model, dominant=dominant, contextual=contextual)
         self.model.eval()
 
-        # 4) 拿到 vision tower，替换里面的 _vz_comp
+        # 4) Get the vision tower and replace its _vz_comp attribute
         vt = getattr(self.model, "model", None)
         vt = getattr(vt, "vision_tower", None)
         if vt is None:
             print("[SparseZip] vision tower not found, abort.")
             return
 
-        # 构造 SparseZip 的 CompressionConfig
+        # Construct SparseZip's CompressionConfig
         alphas = ScoringAlphas(
             attn=alpha_config[0],
             entropy=alpha_config[1],
@@ -457,17 +457,17 @@ class LlavaSparseZipModel(LlavaModel):
             merging=merging,
         )
 
-        # 实例化我们自己的 compressor
+        # Instantiate our custom compressor
         vz_comp = VisionZipCompressor(
             num_scoring_layers=1,
             cfg=comp_cfg,
         )
 
-        # 挂到 vision tower 上，CLIPVisionTower_VisionZip.forward 里就可以用 vt._vz_comp
+        # Attach it to the vision tower, so CLIPVisionTower_VisionZip.forward can use vt._vz_comp
         vt._vz_comp = vz_comp
         self._sparsezip_cfg = comp_cfg
 
-        # === Patch CLIPVisionTower.forward 为 SparseZip 版本 ===
+        # === Patch CLIPVisionTower.forward to the SparseZip version ===
         from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
         from utils.clip_encoder_sparsezip_exp import CLIPVisionTower_SparseZip_EXP
         CLIPVisionTower.forward = CLIPVisionTower_SparseZip_EXP.forward

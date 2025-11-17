@@ -1,5 +1,4 @@
 # sparsezip_compressor.py
-
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Dict
@@ -11,6 +10,7 @@ import torch.nn.functional as F
 # --------- helpers --------- #
 
 def _zscore(x: torch.Tensor, dim: int = 1, eps: float = 1e-12) -> torch.Tensor:
+    # Calculate Z-score (standardize) along a dimension
     m = x.mean(dim=dim, keepdim=True)
     s = x.std(dim=dim, keepdim=True) + eps
     return (x - m) / s
@@ -21,6 +21,7 @@ def _safe_softmax(
     tau: float = 1.0,
     eps: float = 1e-12
 ) -> torch.Tensor:
+    # Apply temperature-scaled softmax, clamping minimum value for stability
     return F.softmax(x / max(tau, eps), dim=dim).clamp_min(eps)
 
 def _normalize_l2(
@@ -28,15 +29,17 @@ def _normalize_l2(
     dim: int = -1,
     eps: float = 1e-12
 ) -> torch.Tensor:
+    # L2 normalize tensor along a dimension
     return x / (x.norm(dim=dim, keepdim=True) + eps)
 
 # --------- scoring --------- #
 
 @dataclass
 class ScoringAlphas:
-    attn: float = 1.0
-    entropy: float = 0.4
-    mutual: float = 0.6
+    # Weights for the three components of the hybrid scoring metric
+    attn: float = 1.0       # Attention score weight
+    entropy: float = 0.4    # Feature Entropy weight
+    mutual: float = 0.6     # Mutual Information proxy weight
 
 class LayerwiseHybridScorer(nn.Module):
     def __init__(
@@ -56,6 +59,7 @@ class LayerwiseHybridScorer(nn.Module):
         self.tau_feat = tau_feat
         self.tau_sim = tau_sim
         self.eps = eps
+        # Learnable gates for fusing scores from multiple layers
         if use_layer_gating and num_layers > 1:
             self.layer_gates = nn.Parameter(
                 torch.zeros(num_layers, dtype=torch.float32)
@@ -69,28 +73,35 @@ class LayerwiseHybridScorer(nn.Module):
         keys: torch.Tensor
     ) -> torch.Tensor:
         # attn_weights: [B,H,L,L]; keys: [B,L,Ck]
-        # 1) CLS->patch 的 attention 平均成 s_attn
+        # 1) CLS->patch attention (s_attn)
+        # Average attention weights from CLS (index 0) to all patch tokens (index 1:) across heads
         s_attn = attn_weights[:, :, 0, 1:].mean(dim=1)  # [B,L-1]
 
-        # 2) feature 熵 (keys)
-        x = keys[:, 1:, :].float()     # [B,L-1,Ck]
+        # 2) Feature Entropy (H)
+        x = keys[:, 1:, :].float()     # [B,L-1,Ck], Patch tokens
+        # Apply temperature-scaled softmax for pseudo-probability distribution
         p = _safe_softmax(x, dim=-1, tau=self.tau_feat, eps=self.eps)
+        # Calculate entropy (normalized by maximum possible entropy)
         H = -(p * p.log()).sum(dim=-1) / math.log(x.shape[-1] + self.eps)  # [B,L-1]
 
-        # 3) mutual-info proxy：基于 pairwise 相似度的熵
+        # 3) Mutual-info proxy (I): Entropy based on pairwise similarity
         z = _normalize_l2(x, dim=-1, eps=self.eps)
         sim = torch.bmm(z, z.transpose(1, 2))     # [B,L-1,L-1]
+        # Mask out self-similarity (diagonal)
         eye = torch.eye(sim.size(-1), device=sim.device).bool().unsqueeze(0)
         sim = sim.masked_fill(eye, -1e9)
+        # Apply softmax for similarity distribution
         q = _safe_softmax(sim, dim=-1, tau=self.tau_sim, eps=self.eps)
+        # Calculate similarity entropy (Hsim) and proxy I = 1 - Hsim
         Hsim = -(q * q.log()).sum(dim=-1) / math.log(q.shape[-1] + self.eps)  # [B,L-1]
         I = 1.0 - Hsim
 
-        # 4) z-score + 线性组合
+        # 4) Z-score normalization + linear combination
         s1 = _zscore(s_attn, dim=1, eps=self.eps)
         s2 = _zscore(H, dim=1, eps=self.eps)
         s3 = _zscore(I, dim=1, eps=self.eps)
         a = self.alphas
+        # Return combined hybrid score
         return a.attn * s1 + a.entropy * s2 + a.mutual * s3    # [B,L-1]
 
     def forward(
@@ -99,32 +110,37 @@ class LayerwiseHybridScorer(nn.Module):
         cross_attn: Optional[torch.Tensor] = None,
         cross_last_dim_is_L: bool = True,
     ) -> torch.Tensor:
-        # per_layer: List[[B,L-1]]
+        # Calculate hybrid score for each layer
         per_layer = [self._single_layer_hybrid(d['attn'], d['keys'])
                      for d in layers]
 
         fused = per_layer[0]
         if len(per_layer) > 1:
+            # Normalize scores from all layers
             normed = [_zscore(s, dim=1, eps=self.eps) for s in per_layer]
+            # Calculate layer weights using softmax over gates
             if self.layer_gates is not None:
                 g = torch.softmax(self.layer_gates, dim=0)
             else:
+                # Use uniform weights if gates are not learnable/used
                 g = torch.full(
                     (len(normed),),
                     1.0 / len(normed),
                     device=fused.device
                 )
+            # Weighted sum of normalized scores
             fused = sum(g[i] * normed[i] for i in range(len(normed)))
 
-        # 可选 cross-attn 融合
+        # Optional cross-attention fusion
         if cross_attn is not None and self.cross_beta != 0.0:
+            # Average cross-attention weights over all dimensions except Batch and Token/Sequence length
             if cross_last_dim_is_L:
                 s_cross = cross_attn.mean(
                     dim=tuple(range(1, cross_attn.dim() - 1))
                 )  # [B,L]
             else:
                 s_cross = cross_attn.mean(dim=(1, 3))
-            s_cross = s_cross[:, 1:]  # 去掉 CLS
+            s_cross = s_cross[:, 1:]  # Remove CLS token score
             fused = fused + self.cross_beta * _zscore(
                 s_cross, dim=1, eps=self.eps
             )
@@ -134,9 +150,10 @@ class LayerwiseHybridScorer(nn.Module):
 
 @dataclass
 class DynamicKConfig:
-    c: float = 8.0
-    k_min: int = 4
-    k_max: int = 64
+    # Configuration for determining K dynamically based on score variance
+    c: float = 8.0          # Constant offset/bias
+    k_min: int = 4          # Minimum K value
+    k_max: int = 64         # Maximum K value
     eps: float = 1e-6
 
 def dynamic_k_from_scores(
@@ -144,8 +161,11 @@ def dynamic_k_from_scores(
     cfg: DynamicKConfig
 ) -> torch.Tensor:
     # scores: [B,L-1]
+    # Calculate variance across patch scores for each image in the batch
     var = scores.var(dim=1, unbiased=False)  # [B]
+    # Calculate K based on variance (log(var) + constant offset)
     k = torch.log(var + cfg.eps) + cfg.c     # [B]
+    # Round, clamp to [k_min, k_max], and ensure K >= 1
     k = torch.round(k).clamp(
         min=cfg.k_min, max=cfg.k_max
     ).to(torch.int64)
@@ -155,10 +175,11 @@ def dynamic_k_from_scores(
 
 @dataclass
 class MergingConfig:
+    # Configuration for merging remaining tokens into contextual tokens
     contextual_num: int = 16
     kmeans_init_factor: float = 2.0
     kmeans_iters: int = 10
-    agglomerative: bool = True
+    agglomerative: bool = True # Use agglomerative merging after k-means initialization
     eps: float = 1e-12
 
 def _kmeans_one(
@@ -167,11 +188,12 @@ def _kmeans_one(
     w: Optional[torch.Tensor],
     iters: int = 10
 ) -> Tuple[torch.Tensor, torch.Tensor]:
+    # Performs weighted k-means clustering for a single sample (unbatched)
     device = x.device
     N, D = x.shape
     k = min(max(1, k), N)
 
-    # k-means++ init
+    # k-means++ initialization
     idx0 = torch.randint(0, N, (1,), device=device)
     cents = [x[idx0]]
     if k > 1:
@@ -188,20 +210,24 @@ def _kmeans_one(
 
     assign = torch.zeros(N, dtype=torch.long, device=device)
     for _ in range(iters):
+        # E-step: Assign points to nearest centroid
         dist = torch.cdist(x, centroids, p=2)  # [N,k]
         assign = dist.argmin(dim=1)            # [N]
+        # M-step: Update centroids (weighted mean)
         for ci in range(centroids.shape[0]):
             mask = (assign == ci)
             if mask.any():
                 if w is not None:
+                    # Weighted mean calculation
                     ww = w[mask].unsqueeze(-1)     # [n_i,1]
                     centroids[ci] = (ww * x[mask]).sum(dim=0) / (
                         ww.sum() + 1e-12
                     )
                 else:
+                    # Simple mean calculation
                     centroids[ci] = x[mask].mean(dim=0)
             else:
-                # empty cluster -> random re-init
+                # Empty cluster -> random re-initialization
                 ridx = torch.randint(0, N, (1,), device=device)
                 centroids[ci] = x[ridx]
     return centroids, assign
@@ -210,18 +236,22 @@ def _agglomerative_merge(
     centroids: torch.Tensor,
     target_k: int
 ) -> torch.Tensor:
+    # Agglomerative (hierarchical) merging based on similarity
     # centroids: [K,D]
     while centroids.shape[0] > target_k:
         z = _normalize_l2(centroids, dim=-1)
+        # Calculate pairwise cosine similarity
         sim = torch.matmul(z, z.T)    # [K,K]
         sim.fill_diagonal_(-1.0)
-        # 找最相似的一对 (i,j)
+        # Find the most similar pair (i,j)
         flat_idx = torch.argmax(sim).item()
         i = flat_idx // sim.shape[1]
         j = flat_idx % sim.shape[1]
         if i > j:
             i, j = j, i
+        # Merge by simple averaging
         merged = (centroids[i] + centroids[j]) / 2.0
+        # Reconstruct the centroid list, excluding i and j, adding the merged one
         centroids = torch.cat(
             [centroids[:i], centroids[i+1:j], centroids[j+1:], merged.unsqueeze(0)],
             dim=0,
@@ -229,13 +259,14 @@ def _agglomerative_merge(
     return centroids
 
 def hierarchical_context_merge(
-    hidden_remain: torch.Tensor,   # [B,Nr,C]
-    keys_remain: torch.Tensor,     # [B,Nr,Ck]
+    hidden_remain: torch.Tensor,   # [B,Nr,C] Remaining hidden states
+    keys_remain: torch.Tensor,     # [B,Nr,Ck] Remaining scoring keys
     weights_remain: Optional[torch.Tensor],
     cfg: MergingConfig,
 ) -> torch.Tensor:
+    # Merges remaining tokens into 'contextual_num' tokens using clustering
     B, Nr, C = hidden_remain.shape
-    z_all = _normalize_l2(keys_remain.float(), dim=-1)
+    z_all = _normalize_l2(keys_remain.float(), dim=-1) # Normalized keys for clustering
     contextual_tokens = []
 
     for b in range(B):
@@ -243,28 +274,37 @@ def hierarchical_context_merge(
         h = hidden_remain[b]     # [Nr,C]
         w = None if weights_remain is None else weights_remain[b]  # [Nr]?
 
+        # Determine K for initial k-means step
         init_k = min(
             int(max(cfg.contextual_num,
                     math.ceil(cfg.kmeans_init_factor * cfg.contextual_num))),
             Nr,
         )
+        # 1. K-means clustering (weighted)
         cents, assign = _kmeans_one(z, init_k, w, iters=cfg.kmeans_iters)
+        
+        # 2. Agglomerative merging (optional)
         if cfg.agglomerative and init_k > cfg.contextual_num:
             cents = _agglomerative_merge(cents, cfg.contextual_num)
 
+        # 3. Final assignment based on merged centroids
         dist = torch.cdist(z, cents, p=2)   # [Nr,ctx_num]
         final_ids = dist.argmin(dim=1)      # [Nr]
 
+        # 4. Aggregate hidden states based on final assignment
         ctoks = []
         for ci in range(cfg.contextual_num):
             mask = (final_ids == ci)
             if not mask.any():
+                # If cluster is empty, append zero vector
                 ctoks.append(torch.zeros(C, device=h.device, dtype=h.dtype))
                 continue
             if w is not None:
+                # Weighted aggregation
                 ww = w[mask].unsqueeze(-1)      # [n_i,1]
                 agg = (ww * h[mask]).sum(dim=0) / (ww.sum() + cfg.eps)
             else:
+                # Simple mean aggregation
                 agg = h[mask].mean(dim=0)
             ctoks.append(agg)
         contextual_tokens.append(torch.stack(ctoks, dim=0))  # [ctx_num,C]
@@ -275,6 +315,7 @@ def hierarchical_context_merge(
 
 @dataclass
 class CompressionConfig:
+    # Overall configuration for the compression process
     alphas: ScoringAlphas = ScoringAlphas()
     tau_feat: float = 0.2
     tau_sim: float = 0.1
@@ -287,7 +328,7 @@ class CompressionConfig:
 
 class VisionZipCompressor(nn.Module):
     """
-    核心：scores -> dynamic-K dominant -> hierarchical contextual merge
+    Core logic: scores -> dynamic-K dominant -> hierarchical contextual merge
     """
     def __init__(
         self,
@@ -296,6 +337,7 @@ class VisionZipCompressor(nn.Module):
     ) -> None:
         super().__init__()
         self.cfg = cfg
+        # Initialize scorer module
         self.scorer = LayerwiseHybridScorer(
             alphas=cfg.alphas,
             use_layer_gating=(num_scoring_layers > 1),
@@ -308,26 +350,27 @@ class VisionZipCompressor(nn.Module):
     @torch.no_grad()
     def forward(
         self,
-        scoring_layers: List[Dict[str, torch.Tensor]],  # 每层 {attn:[B,H,L,L], keys:[B,L,Ck]}
-        hidden_states: torch.Tensor,                    # [B,L,C]
+        scoring_layers: List[Dict[str, torch.Tensor]],  # Per layer: {attn:[B,H,L,L], keys:[B,L,Ck]}
+        hidden_states: torch.Tensor,                    # [B,L,C] Full sequence hidden states
         cross_attn: Optional[torch.Tensor] = None,
         cross_last_dim_is_L: bool = True,
-        dominant_num: Optional[int] = None,             # 显式指定 K（不再 dynamic-K）
+        dominant_num: Optional[int] = None,             # Explicit K override (disables dynamic-K)
         weights_for_context: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         B, L, C = hidden_states.shape
 
-        # 1) multi-signal scoring
+        # 1) Multi-signal scoring
         scores = self.scorer(
             scoring_layers,
             cross_attn=cross_attn,
             cross_last_dim_is_L=cross_last_dim_is_L,
         )  # [B,L-1]
 
-        # 2) dynamic-K per image
+        # 2) Dynamic-K determination per image
         if self.cfg.dynamic_k and dominant_num is None:
             k_per = dynamic_k_from_scores(scores, self.cfg.dynk)  # [B]
         else:
+            # Use fixed K (from dominant_num or default min K)
             k_val = dominant_num if dominant_num is not None else max(
                 self.cfg.k_min, 4
             )
@@ -337,6 +380,7 @@ class VisionZipCompressor(nn.Module):
                 dtype=torch.long,
                 device=hidden_states.device,
             )
+        # Final clamp to ensure K stays within the allowed range
         k_per = torch.clamp(
             k_per,
             min=self.cfg.k_min,
@@ -345,11 +389,14 @@ class VisionZipCompressor(nn.Module):
 
         outputs, idx_batches = [], []
 
-        # 3) per image: dominant selection + contextual merge
+        # 3) Per image processing: dominant selection + contextual merge
         for b in range(B):
             k = int(k_per[b].item())
-            topk = torch.topk(scores[b], k)       # 在 L-1 patch 上选 top-k
-            dom_idx = topk.indices + 1           # +1 映射回原序列 index
+            # Select top-k scores from the L-1 patch tokens
+            topk = torch.topk(scores[b], k)       
+            dom_idx = topk.indices + 1           # +1 to map back to original sequence index
+            
+            # Indices to keep (CLS token + K dominant patches)
             keep_idx = torch.cat(
                 [
                     torch.tensor(
@@ -360,24 +407,27 @@ class VisionZipCompressor(nn.Module):
                     dom_idx,
                 ],
                 dim=0,
-            )                                    # CLS + K dominant
+            )                                    
 
+            # Create mask for tokens to remain/be merged
             mask = torch.ones(L, dtype=torch.bool, device=hidden_states.device)
             mask[keep_idx] = False
 
-            dominant_tokens = hidden_states[b, ~mask, :]   # [1+K,C]
-            remain_hidden = hidden_states[b, mask, :]      # [Nr,C]
-            remain_keys = scoring_layers[0]['keys'][b, mask, :]  # [Nr,Ck]
+            dominant_tokens = hidden_states[b, ~mask, :]   # [1+K,C] Tokens to keep (CLS + dominant)
+            remain_hidden = hidden_states[b, mask, :]      # [Nr,C] Tokens remaining for merging
+            remain_keys = scoring_layers[0]['keys'][b, mask, :]  # [Nr,Ck] Keys for remaining tokens
 
+            # Handle optional weights for contextual tokens
             if weights_for_context is not None:
-                w_all = weights_for_context[b]            # [L-1]
+                w_all = weights_for_context[b]            # [L-1] (Patch weights, no CLS)
                 abs_idx = torch.arange(L, device=hidden_states.device)
-                rem_abs = abs_idx[mask]                   # 包括 CLS 的 indices
-                # w_all 是不含 CLS 的 patch 权重，所以要 -1
+                rem_abs = abs_idx[mask]                   # Indices of remaining tokens (including CLS if it somehow was not dominant, but usually not)
+                # w_all is patch-only weight, so index requires -1 offset
                 w_rem = w_all[rem_abs - 1]
             else:
                 w_rem = None
 
+            # Hierarchical contextual merge
             ctx_tokens = hierarchical_context_merge(
                 remain_hidden.unsqueeze(0),
                 remain_keys.unsqueeze(0),
@@ -385,11 +435,12 @@ class VisionZipCompressor(nn.Module):
                 cfg=self.cfg.merging,
             )[0]    # [contextual_num, C]
 
+            # Final output tokens: Dominant + Contextual
             out = torch.cat([dominant_tokens, ctx_tokens], dim=0)  # [K+1+ctx,C]
             outputs.append(out)
             idx_batches.append(keep_idx)
 
-        # 4) pad 到 batch 内最大长度
+        # 4) Pad outputs to the maximum length within the batch
         max_len = max(o.shape[0] for o in outputs)
         padded = []
         for o in outputs:
@@ -404,7 +455,7 @@ class VisionZipCompressor(nn.Module):
             padded.append(o)
         out_tokens = torch.stack(padded, dim=0)   # [B,max_len,C]
 
-        # indices 也 pad，空位用 -1
+        # Also pad indices, using -1 for empty slots
         max_idx_len = max(len(ids) for ids in idx_batches)
         idx_padded = []
         for ids in idx_batches:
