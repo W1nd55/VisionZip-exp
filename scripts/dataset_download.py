@@ -96,6 +96,13 @@ DATASET_CONFIGS = {
         "size": "~500 MB",
         "includes": ["*zip", "*.json", "*.tsv", "*.txt"],
     },
+    "coco_caption": {
+        "is_special": "coco_caption",
+        "description": "COCO 2014 caption annotations (captions_train2014/val2014.json)",
+        "size": "~100 MB",
+        "note": "Use together with coco_train/coco_val images.",
+        "out_subdir": "coco",
+    },
 }
 # ===========================================================
 
@@ -272,6 +279,56 @@ def download_coco_images(output_dir: Path, split: str = "val2014"):
         zip_path.unlink(missing_ok=True)
         return False
 
+def download_coco_captions(output_dir: Path) -> bool:
+    """
+    Downloads and extracts COCO 2014 caption annotations:
+    - captions_train2014.json
+    - captions_val2014.json
+
+    The official zip is annotations_trainval2014.zip, which contains
+    an inner 'annotations/' directory.
+    """
+    import zipfile
+
+    url = "http://images.cocodataset.org/annotations/annotations_trainval2014.zip"
+    zip_path = output_dir / "annotations_trainval2014.zip"
+
+    inner_dir = output_dir / "annotations"
+    train_json = inner_dir / "captions_train2014.json"
+    val_json = inner_dir / "captions_val2014.json"
+
+    if train_json.exists() and val_json.exists():
+        print(f"✓ COCO caption annotations already exist at {inner_dir}")
+        return True
+
+    print(f"[download] COCO caption annotations -> {zip_path}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        if shutil.which("wget"):
+            subprocess.run(["wget", "-O", str(zip_path), url], check=True)
+        elif shutil.which("curl"):
+            subprocess.run(["curl", "-L", "-o", str(zip_path), url], check=True)
+        else:
+            import urllib.request
+            urllib.request.urlretrieve(url, str(zip_path))
+
+        print(f"[extract] {zip_path}")
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(output_dir)
+        zip_path.unlink(missing_ok=True)
+
+        if train_json.exists() and val_json.exists():
+            print(f"✓ COCO captions extracted to: {inner_dir}")
+            return True
+        else:
+            print(f"❌ captions_train2014.json / captions_val2014.json not found under {inner_dir}")
+            return False
+    except Exception as e:
+        print("❌ Failed to download COCO captions:", e)
+        zip_path.unlink(missing_ok=True)
+        return False
+
 # -------------------- Main CLI --------------------
 def main():
     parser = argparse.ArgumentParser(description="File-layer dataset downloader (HF API)")
@@ -328,6 +385,13 @@ def main():
                     else:
                         raise RuntimeError("COCO download failed")
                     continue # COCO download handled, skip to next
+                elif cfg.get("is_special") == "coco_caption":
+                    if download_coco_captions(out_dir):
+                        print(f"✅ Done: {name}")
+                        success += 1
+                    else:
+                        raise RuntimeError("COCO caption download failed")
+                    continue  # COCO caption handled
 
                 # 1. Download files from HuggingFace API
                 files = download_files_via_api(

@@ -2,7 +2,7 @@
 # Note: model_type remains 'llava_vzip' — SparseZip is the compressor used under the hood.
 
 model:
-  model_type: llava_vzip
+  model_type: sparsezip
   model_path: liuhaotian/llava-v1.5-7b
   temperature: 0.0
   max_new_tokens: 16
@@ -25,8 +25,8 @@ model:
     # Hybrid scoring weights and temps
     alphas:
       attn: 1.0
-      entropy: 0.4
-      mutual: 0.6
+      entropy: 0
+      mutual: 0
     tau_feat: 0.2
     tau_sim: 0.1
 
@@ -39,6 +39,10 @@ model:
       kmeans_init_factor: 2.0
       kmeans_iters: 10
       agglomerative: true
+    
+    skip_hybrid_attn: true
+    skip_dynamic_k:   false
+    skip_ctx_merge:   true   
 
 runner:
   dataset: mme

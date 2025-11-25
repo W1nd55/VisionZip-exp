@@ -4,54 +4,90 @@
 import os
 import sys
 import torch
+import yaml
+from types import SimpleNamespace # 用于将字典转换为对象以便于访问
 
 # ---------- 把项目根目录加到 sys.path ----------
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
+# 假设项目根目录在 ../..
 project_root = os.path.abspath(os.path.join(current_file_dir, "..", ".."))
 if project_root not in sys.path:
     sys.path.append(project_root)
 
 # ---------- 导入我们自己的 Wrapper ----------
+# 确保 scripts.model 和 scripts.abstract 路径正确
 from scripts.model import LlavaSparseZipModel
-from scripts.abstract import Sample   # 你 evalkit 里已经有的类
+from scripts.abstract import Sample
+
+def load_config(config_path):
+    """加载并解析 YAML 配置文件"""
+    with open(config_path, 'r') as f:
+        config_dict = yaml.safe_load(f)
+    return config_dict
 
 def main():
-    # ===== 配置 =====
-    model_path   = "liuhaotian/llava-v1.5-7b"
-    image_file   = "/home/w1nd519994824/project/VisionZip-exp/reference/owl.JPEG"
-    prompt       = "Describe the image in detail"
+    # ===== 1. 加载配置 =====
+    config_file = "/home/w1nd519994824/project/VisionZip-exp/config/sparsezip_mme.yaml" # 假设你的 YAML 文件名为 config_mme.yaml
+    if not os.path.exists(config_file):
+        print(f"[ERROR] Config file '{config_file}' not found. Please create it.")
+        sys.exit(1)
+        
+    config = load_config(config_file)
+    model_cfg = config['model']
+    sparsezip_cfg = model_cfg['sparsezip']
 
-    # SparseZip / VisionZip 相关超参（可以先用论文里的默认）
-    dominant     = 54          # VisionZip 内部会 dominant-1 当成 patch 数
-    contextual   = 10
-    alpha_config = (1.2, 0.9, 0.2)
-    dynk_c       = 8.0
+    # 提取 LlavaSparseZipModel 需要的扁平化参数
+    model_path   = model_cfg['model_path']
+    temperature  = model_cfg['temperature']
+    max_new_tokens = model_cfg['max_new_tokens']
+    dominant     = model_cfg['dominant']
+    contextual   = model_cfg['contextual']
 
-    # ===== 1. 构建模型（会自动 monkey patch + visionzip） =====
+    # 从 sparsezip 配置中提取参数
+    dynk_c       = sparsezip_cfg['dynk']['c']
+    k_min        = sparsezip_cfg['k_min']
+    k_max        = sparsezip_cfg['k_max']
+    
+    # 构建 alpha_config (attn, entropy, mutual)
+    alphas_cfg = sparsezip_cfg['alphas']
+    alpha_config = (alphas_cfg['attn'], alphas_cfg['entropy'], alphas_cfg['mutual'])
+    
+    # contextual_num
+    contextual_num = sparsezip_cfg['merging']['contextual_num']
+
+    # ===== 2. 构造模型（会自动 monkey patch + visionzip） =====
     model = LlavaSparseZipModel(
         model_path   = model_path,
         dominant     = dominant,
         contextual   = contextual,
         alpha_config = alpha_config,
         dynk_c       = dynk_c,
-        k_min        = 4,
-        k_max        = 64,
-        contextual_num = 30,     # 不写就默认等于 contextual
-        temperature  = 0.0,
-        max_new_tokens = 512,
+        k_min        = k_min,
+        k_max        = k_max,
+        contextual_num = contextual_num,
+        temperature  = temperature,
+        max_new_tokens = max_new_tokens,
+        # 其他 sparsezip 参数（如 tau_feat, tau_sim, cross_beta 等）可能需要你的 LlavaSparseZipModel
+        # 内部处理或通过 kwargs 传递。这里只传递了构造函数中显式列出的参数。
     )
 
     # 看一下模型 device
     print("[info] model.device =", model.device())
+    print(f"[info] Using model path: {model_path}")
 
-    # ===== 2. 构造单条 Sample =====
+    # ===== 3. 配置输入 =====
+    image_file   = "/home/w1nd519994824/project/VisionZip-exp/reference/owl.JPEG"
+    prompt       = "Describe the image in detail"
+    sample_qid = "qs_test_001"
+
+    # 构造单条 Sample
     sample = Sample(
         image_path = image_file,
         prompt     = prompt,
-        # 你的 Sample 如果还有其它字段（qid 等）这里一起填上
+        qid        = sample_qid
     )
 
-    # ===== 3. 预处理 + 生成 =====
+    # ===== 4. 预处理 + 生成 =====
     inputs = model.prepare_inputs(sample)  # 返回 {"input_ids":..., "pixel_values":..., ...}
     out    = model.generate(inputs)        # 返回 {"text": ..., "load_ms":..., ...}
 

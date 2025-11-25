@@ -183,3 +183,100 @@ class POPEDataset(BaseDataset):
     def __iter__(self) -> Iterable[Sample]:
         for s in self._samples:
             yield s
+class COCOCaptionDataset(BaseDataset):
+    """
+    COCO Caption Dataset
+
+    Expects a COCO-style caption annotation JSON, e.g.:
+      captions_val2014.json or captions_train2014.json
+
+    Structure:
+    {
+      "images": [
+        {"id": 391895, "file_name": "COCO_val2014_000000391895.jpg", ...},
+        ...
+      ],
+      "annotations": [
+        {"image_id": 391895, "caption": "A group of people ..."},
+        ...
+      ]
+    }
+
+    For each image_id, we gather all its reference captions into Sample.answers.
+
+    image_path is constructed as:
+        datasets/coco/train2014/
+        datasets/coco/val2014/
+    """
+
+    def __init__(self, ann_path: str, limit: Optional[int] = None, image_root: str = "datasets/coco"):
+        self._limit = limit
+        self._image_root = Path(image_root)
+
+        ann_path = Path(ann_path)
+        with open(ann_path, "r", encoding="utf-8") as f:
+            obj = json.load(f)
+
+        # 1) image_id -> file_name
+        id2fname: Dict[int, str] = {}
+        for img in obj.get("images", []):
+            img_id = img.get("id")
+            fname = img.get("file_name")
+            if img_id is None or not fname:
+                continue
+            id2fname[int(img_id)] = fname
+
+        # 2) image_id -> [captions...]
+        refs: Dict[int, List[str]] = {}
+        for a in obj.get("annotations", []):
+            img_id = a.get("image_id")
+            cap = a.get("caption")
+            if img_id is None or not cap:
+                continue
+            img_id = int(img_id)
+            refs.setdefault(img_id, []).append(cap)
+
+        # 3) Build Sample list
+        self._samples: List[Sample] = []
+        for idx, (img_id, caps) in enumerate(refs.items()):
+            if self._limit is not None and idx >= self._limit:
+                break
+
+            fname = id2fname.get(img_id, None)
+            if not fname:
+                continue
+            # Determine image_path based on file_name
+            if "val2014" in fname:
+                split = "val2014"
+            elif "train2014" in fname:
+                split = "train2014"
+            else:
+                split = None
+
+            if split is not None:
+                image_path = str(self._image_root / split / fname)
+            else:
+                image_path = str(self._image_root / fname)
+
+            meta = {
+                "image_id": img_id,
+                "file_name": fname,
+                "split": split,
+            }
+
+            self._samples.append(
+                Sample(
+                    qid=str(img_id),
+                    image_path=image_path,
+                    prompt="Describe the image in one sentence.",
+                    answers=caps,  # 多 reference captions
+                    meta=meta,
+                )
+            )
+
+    def __len__(self) -> int:
+        return len(self._samples)
+
+    def __iter__(self) -> Iterable[Sample]:
+        for s in self._samples:
+            yield s

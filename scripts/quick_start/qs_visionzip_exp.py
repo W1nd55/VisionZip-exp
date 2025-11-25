@@ -21,8 +21,8 @@ from visionzip.clip_encoder import CLIPVisionTower_VisionZip
 from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
 
 # monkey patching
-from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP
-CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP.forward
+from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP_HybridAttn
+CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP_HybridAttn.forward
 
 model_path = "liuhaotian/llava-v1.5-7b"
 
@@ -35,9 +35,9 @@ CLIPAttention.forward = CLIPAttention_forward
 CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
 
 # Replace your original VisionTower
-from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP
+from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP_HybridAttn
 from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
-CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP.forward
+CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP_HybridAttn.forward
 # ==== Load the pretrained model after patching ====
 
 tokenizer, model, image_processor, context_len = load_pretrained_model(

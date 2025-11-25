@@ -325,11 +325,9 @@ class CompressionConfig:
     k_min: int = 4
     k_max: int = 64
     merging: MergingConfig = MergingConfig()
+    skip_ctx_merge: bool = True
 
 class VisionZipCompressor(nn.Module):
-    """
-    Core logic: scores -> dynamic-K dominant -> hierarchical contextual merge
-    """
     def __init__(
         self,
         num_scoring_layers: int = 1,
@@ -421,22 +419,85 @@ class VisionZipCompressor(nn.Module):
             if weights_for_context is not None:
                 w_all = weights_for_context[b]            # [L-1] (Patch weights, no CLS)
                 abs_idx = torch.arange(L, device=hidden_states.device)
-                rem_abs = abs_idx[mask]                   # Indices of remaining tokens (including CLS if it somehow was not dominant, but usually not)
+                rem_abs = abs_idx[mask]                   # indices of remaining tokens
                 # w_all is patch-only weight, so index requires -1 offset
                 w_rem = w_all[rem_abs - 1]
             else:
                 w_rem = None
 
-            # Hierarchical contextual merge
-            ctx_tokens = hierarchical_context_merge(
-                remain_hidden.unsqueeze(0),
-                remain_keys.unsqueeze(0),
-                None if w_rem is None else w_rem.unsqueeze(0),
-                cfg=self.cfg.merging,
-            )[0]    # [contextual_num, C]
+            # ====== Contextual merge ======
+            ctx_num = self.cfg.merging.contextual_num
+            Nr = remain_hidden.shape[0]
 
-            # Final output tokens: Dominant + Contextual
-            out = torch.cat([dominant_tokens, ctx_tokens], dim=0)  # [K+1+ctx,C]
+            if self.cfg.skip_ctx_merge:
+                # ====== VisionZip-style contextual token aggregation ======
+                if ctx_num <= 0:
+                    ctx_tokens = remain_hidden.new_zeros((0, C))
+                elif Nr == 0:
+                    ctx_tokens = remain_hidden.new_zeros((ctx_num, C))
+                else:
+                    metric_filtered = remain_keys.unsqueeze(0).float()        # [1,Nr,Ck]
+                    metric_normalized = _normalize_l2(metric_filtered, dim=-1)  # [1,Nr,Ck]
+
+                    step = max(1, Nr // ctx_num)
+                    target_indices = torch.arange(
+                        0, Nr, step, device=remain_hidden.device
+                    )[:ctx_num]   # [<=ctx_num]
+
+                    if target_indices.numel() < ctx_num:
+                        last_idx = target_indices[-1]
+                        pad_idx = last_idx.repeat(ctx_num - target_indices.numel())
+                        target_indices = torch.cat([target_indices, pad_idx], dim=0)
+
+                    target_tokens = metric_normalized[:, target_indices, :]    # [1,ctx_num,Ck]
+
+                    all_nd_idx = torch.arange(Nr, device=remain_hidden.device)
+                    remain_mask2 = ~torch.isin(all_nd_idx, target_indices)
+                    tokens_to_merge = metric_normalized[:, remain_mask2, :]    # [1,Nr_rem,Ck]
+
+                    if tokens_to_merge.shape[1] == 0:
+                        ctx_tokens = remain_hidden[target_indices, :]          # [ctx_num,C]
+                    else:
+                        similarity = torch.bmm(
+                            tokens_to_merge,
+                            target_tokens.transpose(1, 2)
+                        )  # [1,Nr_rem,ctx_num]
+
+                        assign_one_hot = torch.zeros(
+                            1,
+                            tokens_to_merge.shape[1],
+                            ctx_num,
+                            dtype=remain_hidden.dtype,
+                            device=remain_hidden.device,
+                        )
+                        assign_one_hot.scatter_(
+                            2,
+                            similarity.argmax(dim=2, keepdim=True),
+                            1,
+                        )
+                        counts = assign_one_hot.sum(dim=1).clamp(min=1).unsqueeze(-1)  # [1,ctx_num,1]
+
+                        hidden_to_merge = remain_hidden[remain_mask2, :].unsqueeze(0)  # [1,Nr_rem,C]
+                        aggregated_hidden = torch.bmm(
+                            assign_one_hot.transpose(1, 2),
+                            hidden_to_merge,
+                        ) / counts                                                      # [1,ctx_num,C]
+
+                        target_hidden = remain_hidden[target_indices, :].unsqueeze(0)   # [1,ctx_num,C]
+
+                        # 6) VisionZip: target_hidden + aggregated_hidden
+                        ctx_tokens = (target_hidden + aggregated_hidden)[0]             # [ctx_num,C]
+
+            else:
+                # ====== SparseZip 的 kmeans + agglomerative merge ======
+                ctx_tokens = hierarchical_context_merge(
+                    remain_hidden.unsqueeze(0),
+                    remain_keys.unsqueeze(0),
+                    None if w_rem is None else w_rem.unsqueeze(0),
+                    cfg=self.cfg.merging,
+                )[0]    # [contextual_num, C]
+
+            out = torch.cat([dominant_tokens, ctx_tokens], dim=0)  # [1+K+ctx_num, C]
             outputs.append(out)
             idx_batches.append(keep_idx)
 
