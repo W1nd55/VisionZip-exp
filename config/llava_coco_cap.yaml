@@ -1,0 +1,12 @@
+model:
+  model_type: llava              
+  model_path: liuhaotian/llava-v1.5-7b
+  temperature: 0.0
+  max_new_tokens: 16             
+  conv_mode: llava_v1              
+
+runner:
+  dataset: coco_caption                   
+  output_dir: ./outputs_eval        
+  warmup: 3                       
+  seed: 42

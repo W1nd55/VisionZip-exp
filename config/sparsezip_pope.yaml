@@ -1,12 +1,12 @@
 # SparseZip configuration for POPE
 
 model:
-  model_type: llava_vzip
+  model_type: sparsezip
   model_path: liuhaotian/llava-v1.5-7b
   temperature: 0.0
   max_new_tokens: 16
 
-  dominant: 54  # dynamic-K can override internally
+  dominant: 64  # dynamic-K can override internally
   contextual: 16  # baseline contextual tokens
 
   sparsezip:

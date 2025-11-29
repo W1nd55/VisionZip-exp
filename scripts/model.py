@@ -4,60 +4,70 @@ from PIL import Image
 import torch
 from scripts.timer import StageTimer
 from scripts.abstract import BaseModel, Sample
+import gc
+import sys
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+visionzip_parent_dir = os.path.join(current_dir, os.pardir, 'models/VisionZip')
+if visionzip_parent_dir not in sys.path:
+    sys.path.insert(0, os.path.abspath(visionzip_parent_dir))
 
 # ========================= #
 # Model: LLaVA + VisionZip  #
 # ========================= #
-
-class LlavaVisionZipModel(BaseModel):
-    """
-    Wrap your existing single-sample pipeline; keep it deterministic & timed.
-    """
-    def __init__(self, model_path: str, dominant: int=54, contextual: int=10, temperature: float=0.2, max_new_tokens: int=256):
-        # Imports necessary for model loading and processing
+class LlavaModel(BaseModel):
+    def __init__(self, model_path: str, temperature: float=0.2, max_new_tokens: int=256):
         from llava.model.builder import load_pretrained_model
         from llava.mm_utils import get_model_name_from_path
-        from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
-        # Removed: from llava.mm_utils import tokenizer_image_token (moved to _make_tokenizer_image_token)
+        from llava.constants import (
+            IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN,
+            DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
+        )
         from llava.conversation import conv_templates
-        
-        # ---- Monkey patches (must be before loading model) ----
-        # Patching CLIP attention and encoder layers for VisionZip functionality
-        from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
-        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
-        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
-        CLIPAttention.forward = CLIPAttention_forward
 
-        # ---- Load model ----
-        extra_kwargs = {
-            "device_map": "auto",
-            "torch_dtype": torch.float16,
-        }
-        # Prefer 4bit, else 8bit, else fp16 loading strategy
-        for k, v in [
-            ({"load_4bit": True,
-            "bnb_4bit_compute_dtype": torch.float16,
-            "bnb_4bit_quant_type": "nf4"}, "4bit"),
-            ({"load_8bit": True}, "8bit"),
-            ({}, "fp16")
-        ]:
-            try:
-                kwargs = extra_kwargs | k
-                tokenizer, model, image_processor, _ = load_pretrained_model(
-                    model_path=model_path,
-                    model_base=None,
-                    model_name=get_model_name_from_path(model_path),
-                    **kwargs
-                )
-                print(f"[load] success with {v}")
-                break
-            except Exception as e:
-                print(f"[load] try {v} failed:", e)
-                continue
+        # extra_kwargs = {
+        #     "device_map": "auto",
+        #     "torch_dtype": torch.float16,
+        # }
+        # for k, v in [
+        #     ({"load_4bit": True,
+        #       "bnb_4bit_compute_dtype": torch.float16,
+        #       "bnb_4bit_quant_type": "nf4"}, "4bit"),
+        #     ({"load_8bit": True}, "8bit"),
+        #     ({}, "fp16")
+        # ]:
+        #     try:
+        #         kwargs = extra_kwargs | k
+        #         tokenizer, model, image_processor, _ = load_pretrained_model(
+        #             model_path=model_path,
+        #             model_base=None,
+        #             model_name=get_model_name_from_path(model_path),
+        #             **kwargs
+        #         )
+        #         print(f"[load] success with {v}")
+        #         break
+        #     except Exception as e:
+        #         print(f"[load] try {v} failed:", e)
+        #         continue
         
-        # Apply VisionZip wrapper to the model
-        from visionzip import visionzip as _visionzip
-        model = _visionzip(model, dominant=dominant, contextual=contextual)
+        model_name = get_model_name_from_path(model_path)
+
+        print("[load] using pure fp16 on single GPU ...")
+        tokenizer, model, image_processor, _ = load_pretrained_model(
+            model_path=model_path,
+            model_base=None,
+            model_name=model_name,
+            device_map=None, 
+            torch_dtype=torch.float16,
+        )
+        print("[load] fp16 load success")
+
+        # ---- move whole model to GPU/CPU ----
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.to(device)
+        self._device = device
+        print(f"[load] model moved to {self._device}")
 
         # (Optional) override CLIPVisionTower.forward if you have a custom EXP version
         # try:
@@ -473,7 +483,6 @@ class LlavaSparseZipModel(BaseModel):
         self.DEFAULT_IM_END_TOKEN = DEFAULT_IM_END_TOKEN
         self.temperature = temperature
         self.max_new_tokens = max_new_tokens
-        # Initialize the tokenizer_image_token function with a fallback mechanism
         self.tokenizer_image_token = self._make_tokenizer_image_token()
 
         self.model.eval()
@@ -626,7 +635,6 @@ class LlavaSparseZipModel(BaseModel):
 
         # === Coarse-grained timing ===
         timer.start("end2end")
-        timer.start("decode")  # Treating the entire generation as the decode phase for coarse timing
 
         out = self.model.generate(
             inputs=inputs["input_ids"],
@@ -637,7 +645,6 @@ class LlavaSparseZipModel(BaseModel):
             output_scores=False,
         )
 
-        timer.end("decode")
         timer.end("end2end")
 
         out_ids = out.sequences
@@ -656,31 +663,415 @@ class LlavaSparseZipModel(BaseModel):
         timings_ms = {
             "load_ms":       inputs.get("load_ms", 0.0),
             "preprocess_ms": inputs.get("preprocess_ms", 0.0),
-            "prefill_ms":    0.0,  # Coarse timing, prefill not separated
-            "decode_ms":     timer.result_ms("decode"),
             "end2end_ms":    timer.result_ms("end2end"),
             "num_new_tokens": int(max(gen_len, 0)),
         }
         return {"text": text, **timings_ms}
-
-
-class SparseVLMModel(BaseModel):
+    
+class LlavaVisionZipModel(LlavaModel):
     """
-    A single-sample wrapper for SparseVLM-style LLaVA models.
-    - Deterministic preprocessing
-    - Precise timing
-    - Compatible with your existing eval pipeline
+    LLAVA + VisionZip: Only does two extra things during initialization:
+        1) monkey-patch CLIP's forward methods
+        2) wrap the model with visionzip()  
+    All other prepare_inputs / generate reuse LlavaModel's implementation.
     """
+    def __init__(
+        self,
+        model_path: str,
+        dominant: int = 54,
+        contextual: int = 10,
+        temperature: float = 0.2,
+        max_new_tokens: int = 256,
+    ):
+        # ---- monkey patch CLIP ----
+        self._apply_visionzip_monkey_patches()
 
+        super().__init__(
+            model_path=model_path,
+            temperature=temperature,
+            max_new_tokens=max_new_tokens,
+        )
+
+        from visionzip import visionzip as _visionzip
+        self.model = _visionzip(self.model, dominant=dominant, contextual=contextual)
+        self.model.eval()
+
+    @staticmethod
+    def _apply_visionzip_monkey_patches():
+        """
+        make sure CLIP's encoder layer / attention forward methods are patched by VisionZip versions.
+        This function is designed to be idempotent: multiple calls will only apply the patch once.
+        """
+        from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
+        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
+
+        if getattr(CLIPAttention, "_visionzip_patched", False):
+            return
+
+        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
+        CLIPAttention.forward = CLIPAttention_forward
+
+        CLIPAttention._visionzip_patched = True
+
+class LlavaVisionZipModelHybridAttn(LlavaVisionZipModel):
+    def __init__(self, model_path: str, dominant: int=54, contextual: int=10,
+                 temperature: float=0.2, max_new_tokens: int=256,
+                 alpha_config: Tuple[float, float, float] = (1.2, 0.9, 0.2)):
+
+        from llava.model.builder import load_pretrained_model
+        from llava.mm_utils import get_model_name_from_path
+        from llava.constants import (
+            IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN,
+            DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN,
+        )
+        from llava.conversation import conv_templates
+
+        # ---- monkey patch CLIP ----
+        from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
+        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
+        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
+        CLIPAttention.forward = CLIPAttention_forward
+
+        model_name = get_model_name_from_path(model_path)
+
+        # extra_kwargs = {
+        #     "device_map": "auto",
+        #     "torch_dtype": torch.float16,
+        # }
+
+        # loaded = False
+        # last_err: Exception | None = None
+        # tokenizer = model = image_processor = None
+
+        # # try 4bit -> 8bit -> fp16
+        # attempts = [
+        #     ({"load_4bit": True,
+        #       "bnb_4bit_compute_dtype": torch.float16,
+        #       "bnb_4bit_quant_type": "nf4"}, "4bit"),
+        #     ({"load_8bit": True}, "8bit"),
+        #     ({}, "fp16"),
+        # ]
+
+        # for k, name in attempts:
+        #     try:
+        #         kwargs = extra_kwargs | k
+        #         print(f"[load] trying {name} ...")
+        #         tokenizer, model, image_processor, _ = load_pretrained_model(
+        #             model_path=model_path,
+        #             model_base=None,
+        #             model_name=model_name,
+        #             **kwargs,
+        #         )
+        #         print(f"[load] success with {name}")
+        #         loaded = True
+        #         break
+        #     except Exception as e:
+        #         last_err = e
+        #         print(f"[load] try {name} failed:", e)
+        #         # clear memory before next attempt
+        #         gc.collect()
+        #         if torch.cuda.is_available():
+        #             torch.cuda.empty_cache()
+        #         continue
+
+        # if not loaded or model is None:
+        #     raise RuntimeError(
+        #         f"Failed to load LLaVA model in 4bit/8bit/fp16. Last error: {last_err}"
+        #     )
+        
+        print("[load] using pure fp16 on single GPU ...")
+        tokenizer, model, image_processor, _ = load_pretrained_model(
+            model_path=model_path,
+            model_base=None,
+            model_name=model_name,
+            device_map=None,  
+            torch_dtype=torch.float16,
+        )
+        print("[load] fp16 load success")
+        # ---- move whole model to GPU ----
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.to(device)
+        self._device = device
+        print(f"[load] model moved to {self._device}")
+
+        # ---- VisionZip wrapper ----
+        from visionzip import visionzip as _visionzip
+        model = _visionzip(model, dominant=dominant, contextual=contextual)
+
+        # (Optional) patch VisionTower EXP
+        try:
+            from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP_HybridAttn
+            from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
+            
+
+            vision_tower = getattr(model, "model", None)
+            vision_tower = getattr(vision_tower, "vision_tower", None)
+            
+            print("alpha_config here: ", alpha_config)
+
+            if vision_tower is not None:
+                vision_tower._vision_zip_alpha = alpha_config
+                print(f"[config] Alpha set on Vision Tower: {alpha_config}")
+
+            CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP_HybridAttn.forward
+        except Exception as e:
+            print("[Warn] EXP forward not found or failed to patch:", e)
+
+        self.tokenizer = tokenizer
+        self.model = model
+        self.image_processor = image_processor
+        self.conv_templates = conv_templates
+        self.IMAGE_TOKEN_INDEX = IMAGE_TOKEN_INDEX
+        self.DEFAULT_IMAGE_TOKEN = DEFAULT_IMAGE_TOKEN
+        self.DEFAULT_IM_START_TOKEN = DEFAULT_IM_START_TOKEN
+        self.DEFAULT_IM_END_TOKEN = DEFAULT_IM_END_TOKEN
+        self.temperature = temperature
+        self.max_new_tokens = max_new_tokens
+        self.tokenizer_image_token = self._make_tokenizer_image_token()
+        self.model.eval()
+
+
+class LlavaVisionZipModelDynamicK(LlavaVisionZipModel):
+    def __init__(self, model_path: str, dominant: int=54, contextual: int=10,
+                 temperature: float=0.2, max_new_tokens: int=256,):
+
+        from llava.model.builder import load_pretrained_model
+        from llava.mm_utils import get_model_name_from_path
+        from llava.constants import (
+            IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN,
+            DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN,
+        )
+        from llava.conversation import conv_templates
+
+        # ---- monkey patch CLIP ----
+        from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
+        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
+        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
+        CLIPAttention.forward = CLIPAttention_forward
+
+        model_name = get_model_name_from_path(model_path)
+        
+        print("[load] using pure fp16 on single GPU ...")
+        tokenizer, model, image_processor, _ = load_pretrained_model(
+            model_path=model_path,
+            model_base=None,
+            model_name=model_name,
+            device_map=None,  
+            torch_dtype=torch.float16,
+        )
+        print("[load] fp16 load success")
+        # ---- move whole model to GPU ----
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.to(device)
+        self._device = device
+        print(f"[load] model moved to {self._device}")
+
+        # ---- VisionZip wrapper ----
+        from visionzip import visionzip as _visionzip
+        model = _visionzip(model, dominant=dominant, contextual=contextual)
+
+        # (Optional) patch VisionTower EXP
+        try:
+            from utils.clip_encoder_exp import CLIPVisionTower_VisionZip_EXP_DynamicK
+            from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
+
+            CLIPVisionTower.forward = CLIPVisionTower_VisionZip_EXP_DynamicK.forward
+        except Exception as e:
+            print("[Warn] EXP forward not found or failed to patch:", e)
+
+        self.tokenizer = tokenizer
+        self.model = model
+        self.image_processor = image_processor
+        self.conv_templates = conv_templates
+        self.IMAGE_TOKEN_INDEX = IMAGE_TOKEN_INDEX
+        self.DEFAULT_IMAGE_TOKEN = DEFAULT_IMAGE_TOKEN
+        self.DEFAULT_IM_START_TOKEN = DEFAULT_IM_START_TOKEN
+        self.DEFAULT_IM_END_TOKEN = DEFAULT_IM_END_TOKEN
+        self.temperature = temperature
+        self.max_new_tokens = max_new_tokens
+        self.tokenizer_image_token = self._make_tokenizer_image_token()
+        self.model.eval()
+    
+
+
+class SparseVLMModel(LlavaModel):
+    """
+    remmember to change to env with sparsevlm's llava
+    """
     def __init__(
         self,
         model_path: str,
         temperature: float = 0.2,
         max_new_tokens: int = 256,
         retained_tokens: int = 192,
-        conv_mode: str = "llava_v1",
+        **unused_kwargs,
     ):
-        # ---- imports kept inside to avoid heavy import on module import ----
+        super().__init__(
+            model_path=model_path,
+            temperature=temperature,
+            max_new_tokens=max_new_tokens,
+        )
+        # self.retained_tokens = int(retained_tokens)
+        # print(f"[SparseVLMModel] retained_tokens set to {self.retained_tokens}")
+
+# =============================== #
+#   LLaVA + VisionZip + SparseZip
+#   (hybrid scoring + dyn-K + ctx merge)
+# =============================== #
+class LlavaSparseZipModel(LlavaModel):
+    """
+    LLaVA + VisionZip + SparseZip
+    """
+    def __init__(
+        self,
+        model_path: str,
+        dominant: int = 54,
+        contextual: int = 16,
+        alpha_config: Tuple[float, float, float] = (1.2, 0.9, 0.2),
+        tau_feat: float = 0.2,
+        tau_sim: float = 0.1,
+        cross_beta: float = 0.0,
+        dynamic_k: bool = True,
+        dynk_c: float = 8.0,
+        k_min: int = 4,
+        k_max: int = 64,
+        contextual_num: Optional[int] = None,
+        kmeans_init_factor: float = 2.0,
+        kmeans_iters: int = 10,
+        agglomerative: bool = True,
+        temperature: float = 0.2,
+        max_new_tokens: int = 256,
+        skip_hybrid_attn: bool = False,
+        skip_dynamic_k: bool = False,
+        skip_ctx_merge: bool = False,
+        sparsezip_cfg: Optional[Dict[str, Any]] = None,
+    ):
+        from utils.sparsezip_compressor import (
+            ScoringAlphas, DynamicKConfig, MergingConfig,
+            CompressionConfig, VisionZipCompressor,
+        )
+
+        cfg = sparsezip_cfg or {}
+
+        skip_hybrid_attn = bool(cfg.get("skip_hybrid_attn", skip_hybrid_attn))
+        skip_dynamic_k   = bool(cfg.get("skip_dynamic_k",   skip_dynamic_k))
+        skip_ctx_merge   = bool(cfg.get("skip_ctx_merge",   skip_ctx_merge))
+
+        dynamic_k = bool(cfg.get("dynamic_k", dynamic_k))
+        k_min     = int(cfg.get("k_min", k_min))
+        k_max     = int(cfg.get("k_max", k_max))
+        dynk_cfg  = cfg.get("dynk", {})
+        dynk_c    = float(dynk_cfg.get("c",   dynk_c))
+        
+        alphas_cfg = cfg.get("alphas", {})
+        tau_feat   = float(cfg.get("tau_feat", tau_feat))
+        tau_sim    = float(cfg.get("tau_sim",  tau_sim))
+        cross_beta = float(cfg.get("cross_beta", cross_beta))
+
+        merging_cfg     = cfg.get("merging", {})
+        contextual_num  = merging_cfg.get("contextual_num", contextual_num)
+        kmeans_init_factor = float(merging_cfg.get("kmeans_init_factor", kmeans_init_factor))
+        kmeans_iters       = int(merging_cfg.get("kmeans_iters",       kmeans_iters))
+        agglomerative      = bool(merging_cfg.get("agglomerative",     agglomerative))
+
+        LlavaVisionZipModel._apply_visionzip_monkey_patches()
+
+        super().__init__(
+            model_path=model_path,
+            temperature=temperature,
+            max_new_tokens=max_new_tokens,
+        )
+
+        from visionzip import visionzip as _visionzip
+        self.model = _visionzip(self.model, dominant=dominant, contextual=contextual)
+        self.model.eval()
+
+        vt = getattr(self.model, "model", None)
+        vt = getattr(vt, "vision_tower", None)
+        if vt is None:
+            print("[SparseZip] vision tower not found, abort.")
+            return
+
+        if skip_hybrid_attn:
+            alphas = ScoringAlphas(attn=1.0, entropy=0.0, mutual=0.0)
+        else:
+            alphas = ScoringAlphas(
+                attn=float(alphas_cfg.get("attn",    alpha_config[0])),
+                entropy=float(alphas_cfg.get("entropy", alpha_config[1])),
+                mutual=float(alphas_cfg.get("mutual",  alpha_config[2])),
+            )
+
+        k_min_eff = k_min
+        k_max_eff = k_max
+        use_dynamic_k = dynamic_k and (not skip_dynamic_k)
+
+        k_min_eff = min(k_min_eff, dominant)
+        k_max_eff = max(k_max_eff, dominant)
+
+        if not use_dynamic_k:
+            k_min_eff = k_max_eff = dominant  
+
+        dynk = DynamicKConfig(
+            c=dynk_c,
+            k_min=k_min_eff,
+            k_max=k_max_eff,
+        )
+
+        ctx_num = contextual_num if contextual_num is not None else contextual
+        merging = MergingConfig(
+            contextual_num=ctx_num,
+            kmeans_init_factor=kmeans_init_factor,
+            kmeans_iters=kmeans_iters,
+            agglomerative=agglomerative,
+        )
+
+        comp_cfg = CompressionConfig(
+            alphas=alphas,
+            tau_feat=tau_feat,
+            tau_sim=tau_sim,
+            cross_beta=cross_beta,
+            dynamic_k=use_dynamic_k,
+            dynk=dynk,
+            k_min=k_min_eff,
+            k_max=k_max_eff,
+            merging=merging,
+            skip_ctx_merge=skip_ctx_merge,
+        )
+
+        vz_comp = VisionZipCompressor(
+            num_scoring_layers=1,
+            cfg=comp_cfg,
+        )
+
+        vt._vz_comp = vz_comp
+        self._sparsezip_cfg = comp_cfg
+
+        from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
+        from utils.clip_encoder_sparsezip_exp import CLIPVisionTower_SparseZip_EXP
+        CLIPVisionTower.forward = CLIPVisionTower_SparseZip_EXP.forward
+
+        print("[SparseZip] VisionZipCompressor attached. "
+              f"ctx={ctx_num}, k_range=[{k_min_eff},{k_max_eff}], "
+              f"alphas=({alphas.attn},{alphas.entropy},{alphas.mutual}), "
+              f"dynamic_k={use_dynamic_k}, skip_ctx_merge={skip_ctx_merge}, "
+              f"skip_hybrid_attn={skip_hybrid_attn}, skip_dynamic_k={skip_dynamic_k}")
+
+
+class LlavaVisionZipModelTextAware(BaseModel):
+    """
+    LLaVA + VisionZip + Text-aware encoder-side token selection
+    """
+
+    def __init__(
+        self,
+        model_path: str,
+        dominant: int = 54,
+        contextual: int = 10,
+        alpha: float = 0.5,
+        temperature: float = 0.2,
+        max_new_tokens: int = 256,
+    ):
+        from transformers import CLIPModel, AutoTokenizer
         from llava.model.builder import load_pretrained_model
         from llava.mm_utils import get_model_name_from_path
         from llava.constants import (
@@ -691,242 +1082,76 @@ class SparseVLMModel(BaseModel):
         )
         from llava.conversation import conv_templates
 
-        # ---- load model (4bit -> 8bit -> fp16) ----
-        extra_kwargs = {
-            "device_map": "auto",
-            "torch_dtype": torch.float16,
-        }
-        for k, tag in [
-            ({"load_4bit": True, "bnb_4bit_compute_dtype": torch.float16, "bnb_4bit_quant_type": "nf4"}, "4bit"),
-            ({"load_8bit": True}, "8bit"),
-            ({}, "fp16"),
-        ]:
-            try:
-                kwargs = extra_kwargs | k
-                tokenizer, model, image_processor, _ = load_pretrained_model(
-                    model_path=model_path,
-                    model_base=None,
-                    model_name=get_model_name_from_path(model_path),
-                    **kwargs,
-                )
-                print(f"[load] success with {tag}")
-                break
-            except Exception as e:
-                print(f"[load] try {tag} failed:", e)
-                continue
+        # ---- 1. monkey patch CLIPEncoderLayer / CLIPAttention（VisionZip） ----
+        from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
+        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
 
-        # ---- cache handles on self ----
+        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
+        CLIPAttention.forward = CLIPAttention_forward
+
+        model_name = get_model_name_from_path(model_path)
+        print("[load] using pure fp16 on single GPU ...")
+        tokenizer, model, image_processor, _ = load_pretrained_model(
+            model_path=model_path,
+            model_base=None,
+            model_name=model_name,
+            device_map=None,
+            torch_dtype=torch.float16,
+        )
+        print("[load] fp16 load success")
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.to(device)
+        self._device = device
+        print(f"[load] model moved to {self._device}")
+
+        from visionzip import visionzip as _visionzip
+
+        model = _visionzip(model, dominant=dominant, contextual=contextual)
+
+        try:
+            from utils.clip_encoder_textaware import CLIPVisionTower_VisionZip_TextAware
+            from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
+
+            CLIPVisionTower.forward = CLIPVisionTower_VisionZip_TextAware.forward
+
+            vision_tower = model.get_vision_tower()
+
+            setattr(vision_tower, "visionzip_dominant", int(dominant))
+            setattr(vision_tower, "visionzip_contextual", int(contextual))
+            setattr(vision_tower, "visionzip_alpha", float(alpha))
+
+            vt_name = getattr(vision_tower, "vision_tower_name", None)
+            if vt_name is None:
+                vt_cfg = getattr(vision_tower, "vision_tower_cfg", None)
+                if vt_cfg is not None and hasattr(vt_cfg, "vision_tower"):
+                    vt_name = vt_cfg.vision_tower
+
+            if vt_name is None:
+                raise ValueError("Cannot determine CLIP vision tower name to load text encoder")
+
+            self.clip_text_tokenizer = AutoTokenizer.from_pretrained(vt_name)
+            clip_model = CLIPModel.from_pretrained(
+                vt_name,
+                torch_dtype=torch.float16,
+            ).to(self._device)
+            self.clip_text_model = clip_model.text_model
+            self.clip_text_model.eval()
+
+        except Exception as e:
+            print("[Warn] Text-aware VisionZip forward patch failed:", e)
+            self.clip_text_model = None
+            self.clip_text_tokenizer = None
+
         self.tokenizer = tokenizer
         self.model = model
         self.image_processor = image_processor
         self.conv_templates = conv_templates
-        self.conv_mode = conv_mode
-
         self.IMAGE_TOKEN_INDEX = IMAGE_TOKEN_INDEX
         self.DEFAULT_IMAGE_TOKEN = DEFAULT_IMAGE_TOKEN
         self.DEFAULT_IM_START_TOKEN = DEFAULT_IM_START_TOKEN
         self.DEFAULT_IM_END_TOKEN = DEFAULT_IM_END_TOKEN
-
-        self.temperature = float(temperature)
-        self.max_new_tokens = int(max_new_tokens)
-        self.retained_tokens = int(retained_tokens)
-
-        # function wrappers with fallbacks
+        self.temperature = temperature
+        self.max_new_tokens = max_new_tokens
         self.tokenizer_image_token = self._make_tokenizer_image_token()
-        self._process_images = self._make_process_images()
-
         self.model.eval()
-
-    # ------------------------ helpers ------------------------
-
-    def _make_tokenizer_image_token(self):
-        """
-        Prefer LLaVA's tokenizer_image_token; else fallback:
-        - replace <image> with IMAGE_TOKEN_INDEX
-        - drop <im_start>/<im_end>
-        Always returns torch.LongTensor
-        """
-        try:
-            from llava.mm_utils import tokenizer_image_token as _tik
-
-            def _wrap(prompt: str, **kwargs) -> torch.Tensor:
-                # try legacy sig first, then keyword style
-                try:
-                    out = _tik(prompt, self.tokenizer, self.IMAGE_TOKEN_INDEX, **kwargs)
-                except TypeError:
-                    kwargs.setdefault("tokenizer", self.tokenizer)
-                    kwargs.setdefault("image_token_index", self.IMAGE_TOKEN_INDEX)
-                    out = _tik(prompt, **kwargs)
-                if not torch.is_tensor(out):
-                    out = torch.tensor(out, dtype=torch.long)
-                return out
-
-            return _wrap
-        except Exception:
-            print("[warn] tokenizer_image_token not found; using local fallback.")
-
-            tok = self.tokenizer
-            try:
-                tok_img = tok.convert_tokens_to_ids(self.DEFAULT_IMAGE_TOKEN)
-            except Exception:
-                tok_img = None
-            try:
-                tok_im_start = tok.convert_tokens_to_ids(self.DEFAULT_IM_START_TOKEN)
-            except Exception:
-                tok_im_start = None
-            try:
-                tok_im_end = tok.convert_tokens_to_ids(self.DEFAULT_IM_END_TOKEN)
-            except Exception:
-                tok_im_end = None
-
-            def _local(prompt: str, **kwargs) -> torch.Tensor:
-                ids = tok(prompt, return_tensors=None, add_special_tokens=True)["input_ids"]
-                new_ids = []
-                for t in ids:
-                    if tok_img is not None and t == tok_img:
-                        new_ids.append(self.IMAGE_TOKEN_INDEX)
-                    elif tok_im_start is not None and t == tok_im_start:
-                        continue
-                    elif tok_im_end is not None and t == tok_im_end:
-                        continue
-                    else:
-                        new_ids.append(t)
-                return torch.tensor(new_ids, dtype=torch.long)
-
-            return _local
-
-    def _make_process_images(self):
-        """
-        Prefer LLaVA's process_images(images, image_processor, model_config).
-        Fallback to image_processor.preprocess for single image.
-        Returns FloatTensor on the model device.
-        """
-        try:
-            from llava.mm_utils import process_images as _pimg
-
-            def _wrap(pil_img: Image.Image) -> Tuple[torch.FloatTensor, List[Tuple[int, int]]]:
-                imgs = [pil_img]
-                # _pimg returns a batch tensor (B, C, H, W); sizes not returned, so we collect from PIL
-                tensor = _pimg(imgs, self.image_processor, self.model.config)[0]
-                sizes = [pil_img.size]  # (W, H)
-                return tensor, sizes
-
-            return _wrap
-        except Exception:
-            print("[warn] process_images not found; using processor.preprocess fallback.")
-
-            def _local(pil_img: Image.Image) -> Tuple[torch.FloatTensor, List[Tuple[int, int]]]:
-                out = self.image_processor.preprocess(pil_img, return_tensors="pt")["pixel_values"][0]
-                sizes = [pil_img.size]
-                return out, sizes
-
-            return _local
-
-    # --------------------- BaseModel API ---------------------
-
-    def device(self) -> torch.device:
-        return self.model.device
-
-    @torch.inference_mode()
-    def prepare_inputs(self, sample: Sample) -> Dict[str, Any]:
-        """
-        Returns:
-          - input_ids: LongTensor [1, L]
-          - images:    FloatTensor [1, C, H, W] (half moved to model device)
-          - image_sizes: list[(W,H)] length=1
-          - load_ms / preprocess_ms
-        """
-        # image load
-        image_tensor = None
-        image_sizes = None
-
-        t0 = time.perf_counter()
-        img = Image.open(sample.image_path).convert("RGB") if sample.image_path else None
-        load_ms = (time.perf_counter() - t0) * 1000.0
-
-        # preprocess
-        t1 = time.perf_counter()
-        if img is not None:
-            img_tensor, sizes = self._process_images(img)
-            image_tensor = img_tensor.to(dtype=torch.float16, device=self.device(), non_blocking=True).unsqueeze(0)
-            image_sizes = sizes  # list of (W,H)
-        preprocess_ms = (time.perf_counter() - t1) * 1000.0
-
-        # prompt compose
-        from llava.conversation import conv_templates  # reimport safe
-        conv = conv_templates[self.conv_mode].copy()
-
-        # image placeholder
-        image_placeholder = self.DEFAULT_IMAGE_TOKEN
-        if getattr(self.model.config, "mm_use_im_start_end", False):
-            image_placeholder = (
-                self.DEFAULT_IM_START_TOKEN + self.DEFAULT_IMAGE_TOKEN + self.DEFAULT_IM_END_TOKEN
-            )
-
-        full_user_input = image_placeholder + "\n" + sample.prompt
-        conv.append_message(conv.roles[0], full_user_input)
-        conv.append_message(conv.roles[1], None)
-        final_prompt_string = conv.get_prompt()
-
-        # tokenize prompt (with image sentinel -> IMAGE_TOKEN_INDEX)
-        ids = self.tokenizer_image_token(final_prompt_string, return_tensors=None)
-        if not torch.is_tensor(ids):
-            ids = torch.tensor(ids, dtype=torch.long)
-        input_ids = ids.unsqueeze(0).to(self.device())
-
-        return {
-            "input_ids": input_ids,
-            "images": image_tensor,
-            "image_sizes": image_sizes,
-            "load_ms": load_ms,
-            "preprocess_ms": preprocess_ms,
-        }
-
-    @torch.inference_mode()
-    def generate(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Calls model.generate with SparseVLM-style args and returns text + timings.
-        """
-        timer = StageTimer(use_cuda=(self.device().type == "cuda"))
-
-        timer.start("end2end")
-        timer.start("decode")  # treat all as decode in coarse timer
-
-        out = self.model.generate(
-            inputs=inputs["input_ids"],
-            images=inputs["images"],
-            image_sizes=inputs.get("image_sizes", None),
-            retained_tokens=self.retained_tokens,
-            do_sample=True if self.temperature > 0 else False,
-            temperature=self.temperature,
-            max_new_tokens=self.max_new_tokens,
-            top_p=None, 
-            num_beams=1,
-            use_cache=True,
-            return_dict_in_generate=True,
-            output_scores=False,
-        )
-
-        timer.end("decode")
-        timer.end("end2end")
-
-        out_ids = out.sequences
-        text = self.tokenizer.decode(out_ids[0], skip_special_tokens=True).strip()
-
-        # new tokens
-        try:
-            in_len = inputs["input_ids"].shape[1]
-            seq_len = out_ids.shape[1]
-            gen_len = int(seq_len - in_len) if seq_len >= in_len else int(seq_len)
-        except Exception:
-            gen_len = len(self.tokenizer(text, add_special_tokens=False).input_ids)
-
-        timings_ms = {
-            "load_ms": inputs.get("load_ms", 0.0),
-            "preprocess_ms": inputs.get("preprocess_ms", 0.0),
-            "prefill_ms": 0.0,
-            "decode_ms": timer.result_ms("decode"),
-            "end2end_ms": timer.result_ms("end2end"),
-            "num_new_tokens": int(max(gen_len, 0)),
-        }
-        return {"text": text, **timings_ms}

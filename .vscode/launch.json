@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "python": "/u/q/i/qinxinghao/miniconda3/envs/visionzip/bin/python",
+            "python": "/home/w1nd519994824/project/miniconda3/envs/visionzip/bin/python",
             "cwd": "${workspaceFolder}"
         }
     ]

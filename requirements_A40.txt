@@ -1,0 +1,13 @@
+--extra-index-url https://pypi.org/simple
+--index-url https://download.pytorch.org/whl/cu121
+torch==2.1.2
+torchvision==0.16.2
+torchaudio==2.1.2
+
+# flash-attn 2.x on A40:
+# conda install -c nvidia cuda-toolkit=12.1 -y
+# export TORCH_CUDA_ARCH_LIST="8.6"
+# xport FLASH_ATTENTION_SKIP_SM90=1
+# pip install "flash-attn==2.5.6" --no-build-isolation --no-cache-dir
+# pip install -e models/LLaVA --no-deps
+

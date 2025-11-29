@@ -2,7 +2,7 @@ import string
 import math
 from typing import List, Dict, Any, Optional
 from scripts.abstract import BaseMetric, Sample
-from collections import defaultdict
+from collections import defaultdict, Counter
 import re
 
 _YESNO_RE = re.compile(r"\b(yes|no)\b", flags=re.IGNORECASE)
@@ -11,8 +11,51 @@ _YESNO_RE = re.compile(r"\b(yes|no)\b", flags=re.IGNORECASE)
 # Metric Implement  #
 # ================= #
 
+def _normalize_docvqa_answer(s: str) -> str:
+    return (s or "").strip().lower()
+
+
+def _levenshtein_distance(a: str, b: str) -> int:
+    """
+    standard Levenshtein distance
+    """
+    if a == b:
+        return 0
+    la, lb = len(a), len(b)
+    if la == 0:
+        return lb
+    if lb == 0:
+        return la
+
+    if la > lb:
+        a, b = b, a
+        la, lb = lb, la
+
+    previous = list(range(la + 1))
+    current = [0] * (la + 1)
+
+    for j in range(1, lb + 1):
+        current[0] = j
+        bj = b[j - 1]
+        for i in range(1, la + 1):
+            cost = 0 if a[i - 1] == bj else 1
+            current[i] = min(
+                previous[i] + 1,      # deletion
+                current[i - 1] + 1,   # insertion
+                previous[i - 1] + cost  # substitution
+            )
+        previous, current = current, previous
+
+    return previous[la]
+
 def _normalize_text(s: str) -> str:
     return (s or "").strip().lower()
+
+def _normalize_caption(s: str) -> str:
+    s = (s or "").lower()
+    s = s.translate(str.maketrans("", "", string.punctuation))
+    s = " ".join(s.split())
+    return s
 
 def percentile(arr: List[float], p: float) -> float:
     arr = sorted(arr)
@@ -87,13 +130,9 @@ class DelayStats(BaseMetric):
         # tok/s
         if any('num_new_tokens' in x for x in self.logs) and any(('decode_ms' in x) or ('decode' in x) for x in self.logs):
             toks = sum(x.get('num_new_tokens', 0) for x in self.logs)
-            decode_ms = sum(
-                 (x.get('decode_ms', 0.0) if 'decode_ms' in x else x.get('decode', 0.0))
-                 for x in self.logs
-            )
+            decode_ms = out.get("e2e_avg(ms)", 0.0)
             tps = toks / (decode_ms/1000.0 + 1e-9)
             out["decode_tok_per_s"] = tps
-            out["tok/s"] = tps
         return out
     
 def _yn(s: str):
@@ -113,7 +152,7 @@ class MMEAcc(BaseMetric):
     def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
         gold = _normalize_text(sample.answers[0]) if sample.answers else None
         if gold not in ("yes","no"):
-            return
+            raise ValueError(f"MMEAcc expected 'yes'/'no' answers, got: {gold}")
         pred = _yn(pred_text)
         self.n += 1
         if pred == gold:
@@ -137,7 +176,7 @@ class MMEAccPlus(BaseMetric):
     def compute(self) -> Dict[str, Any]:
         n_img = len(self.pairs)
         both_true = sum(1 for v in self.pairs.values() if v["pos"] is True and v["neg"] is True)
-        return {"mme_acc_plus": (both_true / n_img) if n_img else 0.0, "mme_count_img": n_img}
+        return {"mme_acc_plus": (both_true / n_img) if n_img else 0.0, "mme_count_pair": n_img}
 
 # --- POPE Accuracy ---
 class POPEAcc(BaseMetric):
@@ -169,7 +208,6 @@ class POPEAcc(BaseMetric):
         }
 
 # --- POPE Precision, Recall, F1 ---
-
 class POPEPrecisionRecallF1(BaseMetric):
     """POPE Precision, Recall, F1 (treating 'yes' as positive class)"""
     def __init__(self):
@@ -232,4 +270,371 @@ class POPEPrecisionRecallF1(BaseMetric):
             "pope_tn": self.tn,
             "pope_fn": self.fn,
             "pope_total_samples": total
+        }
+
+# =============================== #
+#   Caption Helper Functions      #
+# =============================== #
+
+_PUNCT_TABLE = str.maketrans("", "", string.punctuation)
+
+def _caption_tokenize(s: str) -> List[str]:
+    s = (s or "").lower().strip()
+    s = s.translate(_PUNCT_TABLE)
+    # collapse multiple spaces
+    s = re.sub(r"\s+", " ", s)
+    return s.split() if s else []
+
+def _ngrams(tokens: List[str], n: int) -> List[tuple]:
+    if len(tokens) < n:
+        return []
+    return [tuple(tokens[i:i+n]) for i in range(len(tokens)-n+1)]
+
+# =============================== #
+#          BLEU (1-4)             #
+# =============================== #
+
+def _corpus_bleu(refs_all, hyps_all, max_n=4, smooth=True) -> Dict[str, float]:
+    """
+    refs_all: List[List[List[str]]]  # [i][k][t]
+    hyps_all: List[List[str]]
+    return { 'bleu1':..., 'bleu2':..., 'bleu3':..., 'bleu4':... }
+    """
+    assert len(refs_all) == len(hyps_all)
+    N = max_n
+    total_ref_len = 0
+    total_hyp_len = 0
+    clipped_counts = [0] * N
+    total_counts = [0] * N
+
+    for refs, hyp in zip(refs_all, hyps_all):
+        hyp_len = len(hyp)
+        total_hyp_len += hyp_len
+        ref_lens = [len(r) for r in refs] or [0]
+        closest_ref_len = min(ref_lens, key=lambda rl: abs(rl - hyp_len))
+        total_ref_len += closest_ref_len
+
+        for n in range(1, N+1):
+            hyp_ngrams = Counter(_ngrams(hyp, n))
+            if not hyp_ngrams:
+                continue
+            max_ref_ngrams = Counter()
+            for r in refs:
+                max_ref_ngrams |= Counter(_ngrams(r, n))
+            overlap = 0
+            for g, cnt in hyp_ngrams.items():
+                overlap += min(cnt, max_ref_ngrams.get(g, 0))
+            clipped_counts[n-1] += overlap
+            total_counts[n-1] += sum(hyp_ngrams.values())
+
+    # brevity penalty
+    if total_hyp_len == 0:
+        return {f"bleu{n}": 0.0 for n in range(1, N+1)}
+
+    if total_hyp_len > total_ref_len:
+        bp = 1.0
+    else:
+        bp = math.exp(1.0 - float(total_ref_len) / float(total_hyp_len + 1e-12))
+
+    out = {}
+    for up_to in range(1, N+1):
+        log_p = 0.0
+        valid = True
+        for n in range(1, up_to+1):
+            c = clipped_counts[n-1]
+            t = total_counts[n-1]
+            if t == 0:
+                valid = False
+                break
+            if c == 0:
+                if smooth:
+                    c = 1
+                    t = t + 1
+                else:
+                    valid = False
+                    break
+            log_p += (1.0 / up_to) * math.log(c / t)
+        if not valid:
+            out[f"bleu{up_to}"] = 0.0
+        else:
+            out[f"bleu{up_to}"] = bp * math.exp(log_p)
+    return out
+
+class CaptionBLEU(BaseMetric):
+    """Corpus BLEU-1/2/3/4 for captions."""
+    def __init__(self, max_n: int = 4, smooth: bool = True):
+        self.max_n = max_n
+        self.smooth = smooth
+        self.refs_all = []  # List[List[List[str]]]
+        self.hyps_all = []  # List[List[str]]
+
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        if not sample.answers:
+            return
+        refs_tok = [_caption_tokenize(a) for a in sample.answers if a]
+        if not refs_tok:
+            return
+        hyp_tok = _caption_tokenize(pred_text)
+        self.refs_all.append(refs_tok)
+        self.hyps_all.append(hyp_tok)
+
+    def compute(self) -> Dict[str, Any]:
+        if not self.refs_all:
+            return {f"bleu{n}": 0.0 for n in range(1, self.max_n+1)}
+        return _corpus_bleu(self.refs_all, self.hyps_all, max_n=self.max_n, smooth=self.smooth)
+
+# =============================== #
+#           ROUGE-L               #
+# =============================== #
+
+def _lcs_len(a: List[str], b: List[str]) -> int:
+    m, n = len(a), len(b)
+    if m == 0 or n == 0:
+        return 0
+    dp = [[0]*(n+1) for _ in range(m+1)]
+    for i in range(1, m+1):
+        ai = a[i-1]
+        row = dp[i]
+        prev_row = dp[i-1]
+        for j in range(1, n+1):
+            if ai == b[j-1]:
+                row[j] = prev_row[j-1] + 1
+            else:
+                row[j] = max(prev_row[j], row[j-1])
+    return dp[m][n]
+
+def _rouge_l_score(refs_all, hyps_all, beta: float = 1.2) -> float:
+    """Corpus-level ROUGE-L (F-measure with LCS)."""
+    assert len(refs_all) == len(hyps_all)
+    sum_f = 0.0
+    cnt = 0
+    for refs, hyp in zip(refs_all, hyps_all):
+        if not hyp or not refs:
+            continue
+        best_f = 0.0
+        for r in refs:
+            lcs = _lcs_len(hyp, r)
+            if lcs == 0:
+                continue
+            prec = lcs / (len(hyp) + 1e-12)
+            rec = lcs / (len(r) + 1e-12)
+            if prec == 0 and rec == 0:
+                continue
+            f = ((1 + beta**2) * prec * rec) / (rec + beta**2 * prec + 1e-12)
+            if f > best_f:
+                best_f = f
+        sum_f += best_f
+        cnt += 1
+    return sum_f / cnt if cnt > 0 else 0.0
+
+class CaptionROUGEL(BaseMetric):
+    """Corpus ROUGE-L (F-measure)."""
+    def __init__(self, beta: float = 1.2):
+        self.beta = beta
+        self.refs_all = []
+        self.hyps_all = []
+
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        if not sample.answers:
+            return
+        refs_tok = [_caption_tokenize(a) for a in sample.answers if a]
+        if not refs_tok:
+            return
+        hyp_tok = _caption_tokenize(pred_text)
+        self.refs_all.append(refs_tok)
+        self.hyps_all.append(hyp_tok)
+
+    def compute(self) -> Dict[str, Any]:
+        if not self.refs_all:
+            return {"rouge_l": 0.0}
+        score = _rouge_l_score(self.refs_all, self.hyps_all, beta=self.beta)
+        return {"rouge_l": score}
+
+# =============================== #
+#            METEOR               #
+# =============================== #
+
+def _meteor_sentence(refs: List[List[str]], hyp: List[str]) -> float:
+    if not hyp or not refs:
+        return 0.0
+
+    best_score = 0.0
+    hyp_unigrams = Counter(hyp)
+    for r in refs:
+        if not r:
+            continue
+        ref_unigrams = Counter(r)
+        overlap = sum(min(c, ref_unigrams[w]) for w, c in hyp_unigrams.items())
+        if overlap == 0:
+            continue
+        precision = overlap / (len(hyp) + 1e-12)
+        recall = overlap / (len(r) + 1e-12)
+        if precision == 0 and recall == 0:
+            continue
+        # Fmean，alpha = 0.9 => weight recall more
+        alpha = 0.9
+        fmean = (precision * recall) / (alpha * precision + (1 - alpha) * recall + 1e-12)
+        if fmean > best_score:
+            best_score = fmean
+    return best_score
+
+class CaptionMETEOR(BaseMetric):
+    """Simplified METEOR (unigram F-mean, no synonym / fragmentation)."""
+    def __init__(self):
+        self.scores = []
+
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        if not sample.answers:
+            return
+        refs_tok = [_caption_tokenize(a) for a in sample.answers if a]
+        if not refs_tok:
+            return
+        hyp_tok = _caption_tokenize(pred_text)
+        s = _meteor_sentence(refs_tok, hyp_tok)
+        self.scores.append(s)
+
+    def compute(self) -> Dict[str, Any]:
+        if not self.scores:
+            return {"meteor": 0.0}
+        return {"meteor": sum(self.scores) / len(self.scores)}
+
+# =============================== #
+#             CIDEr               #
+# =============================== #
+
+def _build_cider_idf(refs_all, max_n=4):
+    df = [Counter() for _ in range(max_n)]
+    N = len(refs_all)
+    for refs in refs_all:
+        for n in range(1, max_n+1):
+            seen = set()
+            for r in refs:
+                for g in set(_ngrams(r, n)):
+                    seen.add(g)
+            for g in seen:
+                df[n-1][g] += 1
+    idf = []
+    for n in range(1, max_n+1):
+        idf_n = {}
+        for g, df_g in df[n-1].items():
+            idf_n[g] = math.log((N + 1.0) / (df_g + 1.0))  # smoothing
+        idf.append(idf_n)
+    return idf  # List[Dict[ngram, idf]]
+
+def _tfidf_vec(tokens: List[str], idf_n: Dict[tuple, float], n: int) -> Dict[tuple, float]:
+    counts = Counter(_ngrams(tokens, n))
+    if not counts:
+        return {}
+    length = sum(counts.values())
+    vec = {}
+    for g, c in counts.items():
+        idf = idf_n.get(g, 0.0)
+        vec[g] = (c / length) * idf
+    return vec
+
+def _cosine_sim(vec1: Dict[tuple, float], vec2: Dict[tuple, float]) -> float:
+    if not vec1 or not vec2:
+        return 0.0
+    # dot
+    if len(vec1) < len(vec2):
+        v_small, v_big = vec1, vec2
+    else:
+        v_small, v_big = vec2, vec1
+    dot = 0.0
+    for g, w in v_small.items():
+        dot += w * v_big.get(g, 0.0)
+    # norms
+    n1 = math.sqrt(sum(w*w for w in vec1.values()))
+    n2 = math.sqrt(sum(w*w for w in vec2.values()))
+    if n1 == 0 or n2 == 0:
+        return 0.0
+    return dot / (n1 * n2 + 1e-12)
+
+def _cider_score(refs_all, hyps_all, max_n=4, sigma: float = 6.0) -> float:
+    assert len(refs_all) == len(hyps_all)
+    idf_all = _build_cider_idf(refs_all, max_n=max_n)
+    scores = []
+    for refs, hyp in zip(refs_all, hyps_all):
+        if not hyp or not refs:
+            continue
+        per_ref_scores = []
+        for r in refs:
+            sim_sum = 0.0
+            for n in range(1, max_n+1):
+                vec_h = _tfidf_vec(hyp, idf_all[n-1], n)
+                vec_r = _tfidf_vec(r, idf_all[n-1], n)
+                sim = _cosine_sim(vec_h, vec_r)
+                sim_sum += sim
+            per_ref_scores.append(sim_sum / max_n)
+        if per_ref_scores:
+            scores.append(sum(per_ref_scores) / len(per_ref_scores))
+    return sum(scores) / len(scores) if scores else 0.0
+
+class CaptionCIDEr(BaseMetric):
+    """Simplified CIDEr (TF-IDF n-gram cosine)."""
+    def __init__(self, max_n: int = 4):
+        self.max_n = max_n
+        self.refs_all = []
+        self.hyps_all = []
+
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        if not sample.answers:
+            return
+        refs_tok = [_caption_tokenize(a) for a in sample.answers if a]
+        if not refs_tok:
+            return
+        hyp_tok = _caption_tokenize(pred_text)
+        self.refs_all.append(refs_tok)
+        self.hyps_all.append(hyp_tok)
+
+    def compute(self) -> Dict[str, Any]:
+        if not self.refs_all:
+            return {"cider": 0.0}
+        score = _cider_score(self.refs_all, self.hyps_all, max_n=self.max_n)
+        return {"cider": score}
+
+class DocVQAANLS(BaseMetric):
+
+    def __init__(self, threshold: float = 0.5):
+        self.threshold = threshold
+        self.n = 0
+        self.sum_anls = 0.0
+
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        if not sample.answers:
+            return
+
+        pred = _normalize_docvqa_answer(pred_text)
+
+        if pred == "" and all(_normalize_docvqa_answer(a) == "" for a in sample.answers):
+            best_sim = 1.0
+        else:
+            best_sim = 0.0
+            for a in sample.answers:
+                gold = _normalize_docvqa_answer(a)
+                if pred == "" and gold == "":
+                    sim = 1.0
+                else:
+                    max_len = max(len(pred), len(gold))
+                    if max_len == 0:
+                        sim = 1.0
+                    else:
+                        dist = _levenshtein_distance(pred, gold)
+                        nld = dist / float(max_len)
+                        sim = 1.0 - nld
+                if sim > best_sim:
+                    best_sim = sim
+
+        if best_sim < self.threshold:
+            best_sim = 0.0
+
+        self.n += 1
+        self.sum_anls += best_sim
+
+    def compute(self) -> Dict[str, Any]:
+        if self.n == 0:
+            return {"docvqa_anls": 0.0, "docvqa_count": 0}
+        return {
+            "docvqa_anls": self.sum_anls / self.n,
+            "docvqa_count": self.n,
         }

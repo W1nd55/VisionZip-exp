@@ -8,7 +8,7 @@ model:
   max_new_tokens: 16
 
   # Dominant tokens default (SparseZip uses dynamic-K internally; this is a safe numeric default)
-  dominant: 54
+  dominant: 64
   # Contextual tokens target (can be overridden by sparsezip.merging.contextual_num)
   contextual: 16
 
@@ -41,11 +41,11 @@ model:
       agglomerative: true
     
     skip_hybrid_attn: true
-    skip_dynamic_k:   false
+    skip_dynamic_k:   true
     skip_ctx_merge:   true   
 
 runner:
-  dataset: mme
+  dataset: docvqa   
   # Required at runtime (or pass via --ann_path): path to JSON annotations
   ann_path: null
   output_dir: ./outputs_eval

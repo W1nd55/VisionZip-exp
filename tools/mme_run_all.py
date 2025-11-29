@@ -25,7 +25,7 @@ METRIC_KEYS_BY_DATASET = {
         # MMEAcc
         "mme_acc", "mme_count_q",
         # MMEAccPlus
-        "mme_acc_plus", "mme_count_img",
+        "mme_acc_plus", "mme_count_pair",
         # DelayStats (common)
         "end2end_ms_avg", "end2end_ms_p50", "end2end_ms_p95",
         "decode_ms_avg", "decode_tok_per_s",

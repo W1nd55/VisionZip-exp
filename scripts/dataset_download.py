@@ -21,6 +21,22 @@ from pathlib import Path
 
 # ===================== Dataset Configs =====================
 DATASET_CONFIGS = {
+    "coco_val": {
+        "is_special": "coco",
+        "split": "val2014",
+        "description": "COCO 2014 Validation Images",
+        "size": "~8 GB",
+        "note": "Downloaded directly via URL (wget/curl/urllib).",
+        "out_subdir": "coco", # Optional output subdirectory name
+    },
+    "coco_train": {
+        "is_special": "coco",
+        "split": "train2014",
+        "description": "COCO 2014 Training Images",
+        "size": "~13 GB",
+        "note": "Downloaded directly via URL (wget/curl/urllib).",
+        "out_subdir": "coco", # Optional output subdirectory name
+    },
     "pope": {
         "hf_repo": "lmms-lab/POPE",
         "repo_type": "dataset",
@@ -79,6 +95,26 @@ DATASET_CONFIGS = {
         "description": "LLaVA-Bench-in-the-Wild",
         "size": "~500 MB",
         "includes": ["*zip", "*.json", "*.tsv", "*.txt"],
+    },
+    "coco_caption": {
+        "is_special": "coco_caption",
+        "description": "COCO 2014 caption annotations (captions_train2014/val2014.json)",
+        "size": "~100 MB",
+        "note": "Use together with coco_train/coco_val images.",
+        "out_subdir": "coco",
+    },
+    "docvqa": {
+        "is_special": "docvqa",
+        "description": "DocVQA 2020 Task 1 Single-Page Document VQA (50k QA on 12k+ document pages)",
+        "size": "~50k QA pairs, 12k images",
+        "note": (
+            "Due to licensing and login requirements, DocVQA must be downloaded "
+            "manually from the RRC portal: https://rrc.cvc.uab.es/?ch=17&com=downloads "
+            "(\"Single-Page Document VQA\" / Task 1). "
+            "After download, extract so that 'documents/' and 'docvqa_*.json' "
+            "are under the dataset output directory."
+        ),
+        "out_subdir": "docvqa",
     },
 }
 # ===========================================================
@@ -207,7 +243,8 @@ def list_datasets():
     print("="*80 + "\n")
     for name, cfg in DATASET_CONFIGS.items():
         print(f"📦 {name}")
-        print(f"   Repo: {cfg['hf_repo']} ({cfg.get('repo_type','dataset')})")
+        if 'hf_repo' in cfg:
+            print(f"   Repo: {cfg['hf_repo']} ({cfg.get('repo_type','dataset')})")
         print(f"   Desc: {cfg['description']}")
         if 'size' in cfg: print(f"   Size: {cfg['size']}")
         if 'note' in cfg: print(f"   Note: {cfg['note']}")
@@ -255,13 +292,95 @@ def download_coco_images(output_dir: Path, split: str = "val2014"):
         zip_path.unlink(missing_ok=True)
         return False
 
+def download_coco_captions(output_dir: Path) -> bool:
+    """
+    Downloads and extracts COCO 2014 caption annotations:
+    - captions_train2014.json
+    - captions_val2014.json
+
+    The official zip is annotations_trainval2014.zip, which contains
+    an inner 'annotations/' directory.
+    """
+    import zipfile
+
+    url = "http://images.cocodataset.org/annotations/annotations_trainval2014.zip"
+    zip_path = output_dir / "annotations_trainval2014.zip"
+
+    inner_dir = output_dir / "annotations"
+    train_json = inner_dir / "captions_train2014.json"
+    val_json = inner_dir / "captions_val2014.json"
+
+    if train_json.exists() and val_json.exists():
+        print(f"✓ COCO caption annotations already exist at {inner_dir}")
+        return True
+
+    print(f"[download] COCO caption annotations -> {zip_path}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        if shutil.which("wget"):
+            subprocess.run(["wget", "-O", str(zip_path), url], check=True)
+        elif shutil.which("curl"):
+            subprocess.run(["curl", "-L", "-o", str(zip_path), url], check=True)
+        else:
+            import urllib.request
+            urllib.request.urlretrieve(url, str(zip_path))
+
+        print(f"[extract] {zip_path}")
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            zf.extractall(output_dir)
+        zip_path.unlink(missing_ok=True)
+
+        if train_json.exists() and val_json.exists():
+            print(f"✓ COCO captions extracted to: {inner_dir}")
+            return True
+        else:
+            print(f"❌ captions_train2014.json / captions_val2014.json not found under {inner_dir}")
+            return False
+    except Exception as e:
+        print("❌ Failed to download COCO captions:", e)
+        zip_path.unlink(missing_ok=True)
+        return False
+
+def prepare_docvqa(output_dir: Path) -> bool:
+    """
+    DocVQA needs to be downloaded manually due to licensing/login requirements.
+    This function checks if the expected files are present.
+    Expected structure after manual download and extraction:
+      output_dir/
+        documents/               # contains all page images
+        docvqa_train_v*.json     # default train JSON
+        docvqa_val_v*.json       # default val JSON (if provided)
+        docvqa_test_v*.json      # default test JSON (if provided)
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    docs_dir = output_dir / "documents"
+    json_files = list(output_dir.glob("docvqa*_v*.json")) + list(output_dir.glob("docvqa_*.json"))
+
+    if docs_dir.exists() and any(docs_dir.iterdir()) and json_files:
+        print(f"✓ Detected existing DocVQA under {output_dir}")
+        print(f"  - images dir: {docs_dir}")
+        print(f"  - json files: {[p.name for p in json_files]}")
+        return True
+
+    print("❗ DocVQA has to be downloaded manually from the RRC portal (requires login):")
+    print("   Challenge page: https://rrc.cvc.uab.es/?ch=17&com=downloads")
+    print("   - Choose: Task 1 \"Single-Page Document VQA\"")
+    print(f"   - Extract so that:")
+    print(f"       {output_dir}/documents/          # contains all page images")
+    print(f"       {output_dir}/docvqa_train_v*.json")
+    print(f"       {output_dir}/docvqa_val_v*.json  (if provided)")
+    print(f"       {output_dir}/docvqa_test_v*.json (if provided)")
+    print("   Then re-run this script with --dataset docvqa; it will reuse the local files.")
+    return False
+
 # -------------------- Main CLI --------------------
 def main():
     parser = argparse.ArgumentParser(description="File-layer dataset downloader (HF API)")
-    parser.add_argument("--dataset", nargs="+", choices=list(DATASET_CONFIGS.keys()))
+    dataset_choices = list(DATASET_CONFIGS.keys())
+    parser.add_argument("--dataset", nargs="+", choices=dataset_choices)
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--output_dir", type=str, default="./datasets")
-    parser.add_argument("--coco", type=str, choices=["val2014", "train2014"])
     parser.add_argument("--skip-auth-check", action="store_true")
     parser.add_argument("--no-extract", action="store_true")
     parser.add_argument("--keep-zip", action="store_true")
@@ -270,9 +389,9 @@ def main():
     if args.list:
         list_datasets()
         return
-    if not args.dataset and not args.coco:
+    if not args.dataset: # check --dataset
         parser.print_help()
-        print("\n❌ Error: Please specify --dataset or --coco or --list")
+        print("\n❌ Error: Please specify --dataset or --list")
         return
 
     if not check_hf_cli():
@@ -286,28 +405,50 @@ def main():
     success = 0
     failed = []
 
-    # COCO Download
-    if args.coco:
-        print("\n" + "="*80)
-        print(f"Downloading COCO {args.coco}")
-        print("="*80 + "\n")
-        if download_coco_images(output_root / "coco", args.coco):
-            success += 1
-        else:
-            failed.append(f"coco_{args.coco}")
-
-    # HF Datasets Download
+    # HF/COCO Datasets Download
     if args.dataset:
         for name in args.dataset:
             cfg = DATASET_CONFIGS[name]
-            out_dir = output_root / name
+            
+            # configure output directory
+            out_subdir = cfg.get("out_subdir", name)
+            out_dir = output_root / out_subdir
+            
             print("\n" + "="*80)
             print(f"Dataset: {name}")
-            print(f"Repo: {cfg['hf_repo']}  (type={cfg.get('repo_type','dataset')})")
+            if 'hf_repo' in cfg:
+                print(f"Repo: {cfg['hf_repo']}  (type={cfg.get('repo_type','dataset')})")
             print(f"Output: {out_dir}")
             print("="*80 + "\n")
 
             try:
+                # coco special handling
+                if cfg.get("is_special") == "coco":
+                    if download_coco_images(output_root / out_subdir, cfg["split"]):
+                        print(f"✅ Done: {name}")
+                        success += 1
+                    else:
+                        raise RuntimeError("COCO download failed")
+                    continue # COCO download handled, skip to next
+                elif cfg.get("is_special") == "coco_caption":
+                    if download_coco_captions(out_dir):
+                        print(f"✅ Done: {name}")
+                        success += 1
+                    else:
+                        raise RuntimeError("COCO caption download failed")
+                    continue  # COCO caption handled
+                elif cfg.get("is_special") == "docvqa":
+                    # DocVQA manual check
+                    if prepare_docvqa(out_dir):
+                        print(f"✅ Done: {name}")
+                        success += 1
+                    else:
+                        raise RuntimeError(
+                            "DocVQA files not found under output_dir; "
+                            "please download & extract as instructed above."
+                        )
+                    continue  # DocVQA handled, skip to next dataset
+
                 # 1. Download files from HuggingFace API
                 files = download_files_via_api(
                     repo_id=cfg["hf_repo"],
@@ -335,7 +476,7 @@ def main():
                 failed.append(name)
 
     # Final Summary
-    total = (1 if args.coco else 0) + len(args.dataset or [])
+    total = len(args.dataset or [])
     print("\n" + "="*80)
     print("Download Summary")
     print("="*80)

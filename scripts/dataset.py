@@ -183,3 +183,207 @@ class POPEDataset(BaseDataset):
     def __iter__(self) -> Iterable[Sample]:
         for s in self._samples:
             yield s
+
+class COCOCaptionDataset(BaseDataset):
+    """
+    COCO Caption Dataset
+
+    Expects a COCO-style caption annotation JSON, e.g.:
+      captions_val2014.json or captions_train2014.json
+
+    Structure:
+    {
+      "images": [
+        {"id": 391895, "file_name": "COCO_val2014_000000391895.jpg", ...},
+        ...
+      ],
+      "annotations": [
+        {"image_id": 391895, "caption": "A group of people ..."},
+        ...
+      ]
+    }
+
+    For each image_id, we gather all its reference captions into Sample.answers.
+
+    image_path is constructed as:
+        datasets/coco/train2014/
+        datasets/coco/val2014/
+    """
+
+    def __init__(self, ann_path: str, limit: Optional[int] = None, image_root: str = "datasets/coco"):
+        self._limit = limit
+        self._image_root = Path(image_root)
+
+        ann_path = Path(ann_path)
+        with open(ann_path, "r", encoding="utf-8") as f:
+            obj = json.load(f)
+
+        # 1) image_id -> file_name
+        id2fname: Dict[int, str] = {}
+        for img in obj.get("images", []):
+            img_id = img.get("id")
+            fname = img.get("file_name")
+            if img_id is None or not fname:
+                continue
+            id2fname[int(img_id)] = fname
+
+        # 2) image_id -> [captions...]
+        refs: Dict[int, List[str]] = {}
+        for a in obj.get("annotations", []):
+            img_id = a.get("image_id")
+            cap = a.get("caption")
+            if img_id is None or not cap:
+                continue
+            img_id = int(img_id)
+            refs.setdefault(img_id, []).append(cap)
+
+        # 3) Build Sample list
+        self._samples: List[Sample] = []
+        for idx, (img_id, caps) in enumerate(refs.items()):
+            if self._limit is not None and idx >= self._limit:
+                break
+
+            fname = id2fname.get(img_id, None)
+            if not fname:
+                continue
+            # Determine image_path based on file_name
+            if "val2014" in fname:
+                split = "val2014"
+            elif "train2014" in fname:
+                split = "train2014"
+            else:
+                split = None
+
+            if split is not None:
+                image_path = str(self._image_root / split / fname)
+            else:
+                image_path = str(self._image_root / fname)
+
+            meta = {
+                "image_id": img_id,
+                "file_name": fname,
+                "split": split,
+            }
+
+            self._samples.append(
+                Sample(
+                    qid=str(img_id),
+                    image_path=image_path,
+                    prompt="Describe the image in one sentence.",
+                    answers=caps,  # reference captions
+                    meta=meta,
+                )
+            )
+
+    def __len__(self) -> int:
+        return len(self._samples)
+
+    def __iter__(self) -> Iterable[Sample]:
+        for s in self._samples:
+            yield s
+
+class DocVQADataset(BaseDataset):
+    """
+    DocVQA (Single-Page Document VQA, Task 1)
+
+    Expected JSON format (official DocVQA train/val/test, including *_withQT.json):
+    {
+      "dataset_name": "docvqa",
+      "dataset_split": "train" | "val" | "test",
+      "dataset_version": "1.0",
+      "data": [
+        {
+          "questionId": 52212,
+          "question": "Whose signature is given?",
+          "image": "documents/txpn0095_1.png",
+          "docId": 1968,
+          "ucsf_document_id": "txpn0095",
+          "ucsf_document_page_no": "1",
+          "answers": ["Edward R. Shannon", "Edward Shannon"],
+          "questionType": "..."      # in *_withQT.json
+        },
+        ...
+      ]
+    }
+
+    - ann_path: path to e.g. docvqa_train_v1.0_withQT.json
+    - image_root (optional): base directory for images.
+        If None, defaults to ann_path.parent, so "image" field is joined as:
+            Path(ann_path).parent / it["image"]
+    """
+
+    def __init__(
+        self,
+        ann_path: str,
+        limit: Optional[int] = None,
+        image_root: Optional[str] = None,
+    ):
+        self._samples: List[Sample] = []
+
+        ann_path = Path(ann_path)
+        with ann_path.open("r", encoding="utf-8") as f:
+            obj = json.load(f)
+
+        # Handle both official dict format {"data": [...]} and a plain list
+        if isinstance(obj, dict) and "data" in obj:
+            entries = obj["data"]
+        elif isinstance(obj, list):
+            entries = obj
+        else:
+            raise ValueError(f"Unrecognized DocVQA annotation format: {ann_path}")
+
+        if limit is not None:
+            entries = entries[:limit]
+
+        # Base dir for images
+        base_dir = Path(image_root) if image_root is not None else ann_path.parent
+
+        for idx, it in enumerate(entries):
+            # ---- Basic fields ----
+            qid = it.get("questionId") or it.get("question_id") or idx
+            question = it.get("question")
+            img_rel = it.get("image") or it.get("image_path")
+            answers = it.get("answers") or []
+
+            if question is None or img_rel is None:
+                # skip malformed entries
+                continue
+
+            # Normalize answers to a list of strings
+            if isinstance(answers, str):
+                answers = [answers]
+            elif not isinstance(answers, (list, tuple)):
+                answers = [str(answers)]
+
+            # Build full image path
+            img_path = base_dir / img_rel
+
+            # ---- Meta info (doc id, page, question type, etc.) ----
+            meta_keys = [
+                "docId",
+                "ucsf_document_id",
+                "ucsf_document_page_no",
+                "questionType",
+                "question_type",
+                "dataset_split",
+                "dataset_name",
+                "dataset_version",
+            ]
+            meta = {k: it[k] for k in meta_keys if k in it}
+
+            self._samples.append(
+                Sample(
+                    qid=str(qid),
+                    image_path=str(img_path),
+                    prompt=question,
+                    answers=answers,
+                    meta=meta or None,
+                )
+            )
+
+    def __len__(self) -> int:
+        return len(self._samples)
+
+    def __iter__(self) -> Iterable[Sample]:
+        for s in self._samples:
+            yield s
