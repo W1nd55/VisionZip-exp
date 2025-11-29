@@ -103,6 +103,19 @@ DATASET_CONFIGS = {
         "note": "Use together with coco_train/coco_val images.",
         "out_subdir": "coco",
     },
+    "docvqa": {
+        "is_special": "docvqa",
+        "description": "DocVQA 2020 Task 1 Single-Page Document VQA (50k QA on 12k+ document pages)",
+        "size": "~50k QA pairs, 12k images",
+        "note": (
+            "Due to licensing and login requirements, DocVQA must be downloaded "
+            "manually from the RRC portal: https://rrc.cvc.uab.es/?ch=17&com=downloads "
+            "(\"Single-Page Document VQA\" / Task 1). "
+            "After download, extract so that 'documents/' and 'docvqa_*.json' "
+            "are under the dataset output directory."
+        ),
+        "out_subdir": "docvqa",
+    },
 }
 # ===========================================================
 
@@ -329,6 +342,38 @@ def download_coco_captions(output_dir: Path) -> bool:
         zip_path.unlink(missing_ok=True)
         return False
 
+def prepare_docvqa(output_dir: Path) -> bool:
+    """
+    DocVQA needs to be downloaded manually due to licensing/login requirements.
+    This function checks if the expected files are present.
+    Expected structure after manual download and extraction:
+      output_dir/
+        documents/               # contains all page images
+        docvqa_train_v*.json     # default train JSON
+        docvqa_val_v*.json       # default val JSON (if provided)
+        docvqa_test_v*.json      # default test JSON (if provided)
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    docs_dir = output_dir / "documents"
+    json_files = list(output_dir.glob("docvqa*_v*.json")) + list(output_dir.glob("docvqa_*.json"))
+
+    if docs_dir.exists() and any(docs_dir.iterdir()) and json_files:
+        print(f"✓ Detected existing DocVQA under {output_dir}")
+        print(f"  - images dir: {docs_dir}")
+        print(f"  - json files: {[p.name for p in json_files]}")
+        return True
+
+    print("❗ DocVQA has to be downloaded manually from the RRC portal (requires login):")
+    print("   Challenge page: https://rrc.cvc.uab.es/?ch=17&com=downloads")
+    print("   - Choose: Task 1 \"Single-Page Document VQA\"")
+    print(f"   - Extract so that:")
+    print(f"       {output_dir}/documents/          # contains all page images")
+    print(f"       {output_dir}/docvqa_train_v*.json")
+    print(f"       {output_dir}/docvqa_val_v*.json  (if provided)")
+    print(f"       {output_dir}/docvqa_test_v*.json (if provided)")
+    print("   Then re-run this script with --dataset docvqa; it will reuse the local files.")
+    return False
+
 # -------------------- Main CLI --------------------
 def main():
     parser = argparse.ArgumentParser(description="File-layer dataset downloader (HF API)")
@@ -392,6 +437,17 @@ def main():
                     else:
                         raise RuntimeError("COCO caption download failed")
                     continue  # COCO caption handled
+                elif cfg.get("is_special") == "docvqa":
+                    # DocVQA manual check
+                    if prepare_docvqa(out_dir):
+                        print(f"✅ Done: {name}")
+                        success += 1
+                    else:
+                        raise RuntimeError(
+                            "DocVQA files not found under output_dir; "
+                            "please download & extract as instructed above."
+                        )
+                    continue  # DocVQA handled, skip to next dataset
 
                 # 1. Download files from HuggingFace API
                 files = download_files_via_api(

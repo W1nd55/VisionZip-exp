@@ -1,6 +1,40 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
+
+# ----------------- Hv Rank Calculation -----------------
+def _safe_softmax(
+    x: torch.Tensor,
+    dim: int = -1,
+    tau: float = 1.0,
+    eps: float = 1e-12
+) -> torch.Tensor:
+    # Apply temperature-scaled softmax, clamping minimum value for stability
+    return F.softmax(x / max(tau, eps), dim=dim).clamp_min(eps)
+
+def _estimate_rank(
+    x: torch.Tensor, # [B, L_patches, Ck] (Patch keys)
+    thresh_factor: float = 1e-4,
+    eps: float = 1e-12,
+) -> torch.Tensor:
+    B, L, D = x.shape
+    ranks = []
+    
+    for b in range(B):
+        x_centered = x[b].float() - x[b].float().mean(dim=0, keepdim=True)
+        try:
+            # Full SVD values
+            S = torch.linalg.svdvals(x_centered)
+            # Threshold based on max singular value and max dimension
+            thresh = thresh_factor * max(L, D) * S[0].max() 
+            rank = (S > thresh).sum().long()
+        except:
+            # Fallback for unstable SVD
+            rank = torch.tensor(min(L, D), device=x.device, dtype=torch.long)
+        ranks.append(rank)
+        
+    return torch.stack(ranks, dim=0) # [B]
 
 @torch.no_grad()
 def hybrid_token_score(attn_weights, hidden_states, metric,
@@ -144,126 +178,124 @@ class CLIPVisionTower_VisionZip_EXP_HybridAttn(nn.Module):
 
         return hidden_states_save, all_indices
 
-class CLIPVisionTower_VisionZip_EXP_DynamicK(nn.Module):
+# class CLIPVisionTower_VisionZip_EXP_DynamicK(nn.Module):
 
-    @torch.no_grad()
-    def forward(self, images):
-        max_dominant  = 128
-        min_dominant  = 16
+#     @torch.no_grad()
+#     def forward(self, images):
+#         max_dominant  = 128
+#         min_dominant  = 16
 
-        if isinstance(images, list):
-            image_features = []
-            for image in images:
-                outs = self.vision_tower(
-                    image.to(device=self.device, dtype=self.dtype).unsqueeze(0),
-                    output_hidden_states=True, output_attentions=True
-                )
-                feat = self.feature_select(outs).to(image.dtype)
-                image_features.append(feat)
-            return torch.stack(image_features, dim=0), None
+#         if isinstance(images, list):
+#             image_features = []
+#             for image in images:
+#                 outs = self.vision_tower(
+#                     image.to(device=self.device, dtype=self.dtype).unsqueeze(0),
+#                     output_hidden_states=True, output_attentions=True
+#                 )
+#                 feat = self.feature_select(outs).to(image.dtype)
+#                 image_features.append(feat)
+#             return torch.stack(image_features, dim=0), None
 
-        outs = self.vision_tower(
-            images.to(device=self.device, dtype=self.dtype),
-            output_hidden_states=True, output_attentions=True
-        )
-        attn_weights  = outs.attentions[-2]      # [B, H, T, T]
-        hidden_states = outs.hidden_states[-2]   # [B, T, D]
-        metric = self.vision_tower.vision_model.encoder.layers[-2].metric
+#         outs = self.vision_tower(
+#             images.to(device=self.device, dtype=self.dtype),
+#             output_hidden_states=True, output_attentions=True
+#         )
+#         attn_weights  = outs.attentions[-2]      # [B, H, T, T]
+#         hidden_states = outs.hidden_states[-2]   # [B, T, D]
+#         metric = self.vision_tower.vision_model.encoder.layers[-2].metric
 
-        cls_idx = 0
-        cls_attention = attn_weights[:, :, cls_idx, cls_idx+1:]       # [B, H, L]
-        cls_attention_sum = cls_attention.sum(dim=1)                  # [B, L]
-        Sd = cls_attention_sum                 
+#         cls_idx = 0
+#         cls_attention = attn_weights[:, :, cls_idx, cls_idx+1:]       # [B, H, L]
+#         cls_attention_sum = cls_attention.sum(dim=1)                  # [B, L]
+#         Sd = cls_attention_sum                 
 
-        eps = 1e-6
-        var_per_image = Sd.var(dim=-1, unbiased=False)    # [B]
-        var_log = torch.log(var_per_image + eps)          # [B]
+#         eps = 1e-6
+#         var_per_image = Sd.var(dim=-1, unbiased=False)    # [B]
+#         var_log = torch.log(var_per_image + eps)          # [B]
 
-        LOGV_MIN = -7.0
-        LOGV_MAX = -3.0
+#         LOGV_MIN = -7.0
+#         LOGV_MAX = -3.0
 
-        if LOGV_MAX <= LOGV_MIN:
-            t = torch.zeros_like(var_log)
-        else:
-            t = (var_log - LOGV_MIN) / (LOGV_MAX - LOGV_MIN)
-        t = t.clamp(0.0, 1.0)                             # [B] ∈ [0,1]
+#         if LOGV_MAX <= LOGV_MIN:
+#             t = torch.zeros_like(var_log)
+#         else:
+#             t = (var_log - LOGV_MIN) / (LOGV_MAX - LOGV_MIN)
+#         t = t.clamp(0.0, 1.0)                             # [B] ∈ [0,1]
 
-        K_float = min_dominant + t * (max_dominant - min_dominant)  # [B]
-        K = K_float.round().to(torch.long)                          # [B]
+#         K_float = min_dominant + t * (max_dominant - min_dominant)  # [B]
+#         K = K_float.round().to(torch.long)                          # [B]
 
-        dominant_num = int(K[0].item())
-        # print(f"var_log: {var_log.detach().cpu().numpy()}  => K: {dominant_num}")
+#         dominant_num = int(K[0].item())
+#         # print(f"var_log: {var_log.detach().cpu().numpy()}  => K: {dominant_num}")
 
-        contextual_num = self.vision_tower._info["contextual"]
+#         contextual_num = self.vision_tower._info["contextual"]
         
-        cls_attention_sum = Sd  # [B, L]
-        topk_indices = cls_attention_sum.topk(dominant_num, dim=1).indices + 1  # [B, K]
+#         cls_attention_sum = Sd  # [B, L]
+#         topk_indices = cls_attention_sum.topk(dominant_num, dim=1).indices + 1  # [B, K]
 
-        all_indices = torch.cat(
-            [
-                torch.zeros(
-                    (hidden_states.shape[0], 1),
-                    dtype=topk_indices.dtype,
-                    device=topk_indices.device
-                ),
-                topk_indices,
-            ],
-            dim=1,
-        )  # [B, K+1]
-        mask = torch.ones_like(hidden_states[:, :, 0],
-                               dtype=torch.bool,
-                               device=metric.device).scatter_(1, all_indices, False)
+#         all_indices = torch.cat(
+#             [
+#                 torch.zeros(
+#                     (hidden_states.shape[0], 1),
+#                     dtype=topk_indices.dtype,
+#                     device=topk_indices.device
+#                 ),
+#                 topk_indices,
+#             ],
+#             dim=1,
+#         )  # [B, K+1]
+#         mask = torch.ones_like(hidden_states[:, :, 0],
+#                                dtype=torch.bool,
+#                                device=metric.device).scatter_(1, all_indices, False)
 
-        dominant_tokens = hidden_states.masked_select(~mask.unsqueeze(-1)).view(
-            hidden_states.shape[0], dominant_num + 1, hidden_states.shape[2]
-        )
+#         dominant_tokens = hidden_states.masked_select(~mask.unsqueeze(-1)).view(
+#             hidden_states.shape[0], dominant_num + 1, hidden_states.shape[2]
+#         )
 
-        metric_filtered = metric[mask].view(
-            hidden_states.shape[0],
-            hidden_states.shape[1] - (dominant_num + 1),
-            metric.shape[2],
-        )
-        hidden_states_filtered = hidden_states.masked_select(mask.unsqueeze(-1)).view(
-            hidden_states.shape[0],
-            hidden_states.shape[1] - (dominant_num + 1),
-            hidden_states.shape[2],
-        )
+#         metric_filtered = metric[mask].view(
+#             hidden_states.shape[0],
+#             hidden_states.shape[1] - (dominant_num + 1),
+#             metric.shape[2],
+#         )
+#         hidden_states_filtered = hidden_states.masked_select(mask.unsqueeze(-1)).view(
+#             hidden_states.shape[0],
+#             hidden_states.shape[1] - (dominant_num + 1),
+#             hidden_states.shape[2],
+#         )
 
-        metric_normalized = metric_filtered / (metric_filtered.norm(dim=-1, keepdim=True) + 1e-12)
+#         metric_normalized = metric_filtered / (metric_filtered.norm(dim=-1, keepdim=True) + 1e-12)
 
-        step = max(1, metric_normalized.shape[1] // contextual_num)
-        target_indices = torch.arange(
-            0, metric_normalized.shape[1], step, device=metric_normalized.device
-        )[:contextual_num]
-        target_tokens = metric_normalized[:, target_indices, :]
+#         step = max(1, metric_normalized.shape[1] // contextual_num)
+#         target_indices = torch.arange(
+#             0, metric_normalized.shape[1], step, device=metric_normalized.device
+#         )[:contextual_num]
+#         target_tokens = metric_normalized[:, target_indices, :]
 
-        all_nd_idx = torch.arange(metric_normalized.shape[1], device=metric_normalized.device)
-        remain_mask = ~torch.isin(all_nd_idx, target_indices)
+#         all_nd_idx = torch.arange(metric_normalized.shape[1], device=metric_normalized.device)
+#         remain_mask = ~torch.isin(all_nd_idx, target_indices)
 
-        tokens_to_merge = metric_normalized[:, remain_mask, :]
-        similarity = torch.bmm(tokens_to_merge, target_tokens.transpose(1, 2))
+#         tokens_to_merge = metric_normalized[:, remain_mask, :]
+#         similarity = torch.bmm(tokens_to_merge, target_tokens.transpose(1, 2))
 
-        assign_one_hot = torch.zeros(
-            tokens_to_merge.shape[0],
-            tokens_to_merge.shape[1],
-            contextual_num,
-            dtype=hidden_states_filtered.dtype,
-            device=metric_normalized.device,
-        )
-        assign_one_hot.scatter_(2, similarity.argmax(dim=2).unsqueeze(-1), 1)
-        counts = assign_one_hot.sum(dim=1).clamp(min=1).unsqueeze(-1)
+#         assign_one_hot = torch.zeros(
+#             tokens_to_merge.shape[0],
+#             tokens_to_merge.shape[1],
+#             contextual_num,
+#             dtype=hidden_states_filtered.dtype,
+#             device=metric_normalized.device,
+#         )
+#         assign_one_hot.scatter_(2, similarity.argmax(dim=2).unsqueeze(-1), 1)
+#         counts = assign_one_hot.sum(dim=1).clamp(min=1).unsqueeze(-1)
 
-        hidden_to_merge = hidden_states_filtered[:, remain_mask, :]
-        aggregated_hidden = torch.bmm(assign_one_hot.transpose(1, 2), hidden_to_merge) / counts
-        target_hidden = hidden_states_filtered[:, target_indices, :]
+#         hidden_to_merge = hidden_states_filtered[:, remain_mask, :]
+#         aggregated_hidden = torch.bmm(assign_one_hot.transpose(1, 2), hidden_to_merge) / counts
+#         target_hidden = hidden_states_filtered[:, target_indices, :]
 
-        contextual_tokens = target_hidden + aggregated_hidden
-        hidden_states_save = torch.cat([dominant_tokens, contextual_tokens], dim=1).to(images.dtype)
+#         contextual_tokens = target_hidden + aggregated_hidden
+#         hidden_states_save = torch.cat([dominant_tokens, contextual_tokens], dim=1).to(images.dtype)
 
-        return hidden_states_save, all_indices
+#         return hidden_states_save, all_indices
 
-
-
-
+e
 
 

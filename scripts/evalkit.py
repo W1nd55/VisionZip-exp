@@ -161,6 +161,21 @@ def build_dataset_and_metrics(dataset_name: str, ann_path: str, limit: int | Non
             CaptionCIDEr(),
             DelayStats(),
         ]
+    elif dataset_name == "docvqa":
+        # DocVQA: Single-Page Document VQA (Task 1)
+        from scripts.dataset import DocVQADataset
+        from scripts.metric import DocVQAANLS, ExactMatch
+
+        dataset = DocVQADataset(
+            ann_path=ann_path,
+            limit=limit,
+            image_root=None,
+        )
+        metrics = [
+            DocVQAANLS(),
+            ExactMatch(),
+            DelayStats(),
+        ]
     else:
         raise ValueError(f"Unknown dataset: {dataset_name}")
     return dataset, metrics
@@ -173,7 +188,7 @@ if __name__ == "__main__":
 
     # Arguments only passed to override YAML values (None = no override)
     # Override 'model' section
-    parser.add_argument("--model_type", type=str, default=None, choices=["llava_vzip", "sparsezip", "sparsevlm"]) 
+    parser.add_argument("--model_type", type=str, default=None, choices=["llava_vzip", "sparsezip", "sparsevlm", "llava"]) 
     parser.add_argument("--model_path", type=str, default=None)
     parser.add_argument("--dominant", type=int, default=None)
     parser.add_argument("--contextual", type=int, default=None)
@@ -183,7 +198,7 @@ if __name__ == "__main__":
     parser.add_argument("--conv_mode", type=str, default=None)
 
     # Override 'runner' section
-    parser.add_argument("--dataset", type=str, default=None, choices=["vqa","mme","pope","coco_caption"])
+    parser.add_argument("--dataset", type=str, default=None, choices=["vqa","mme","pope","coco_caption", "docvqa"])
     parser.add_argument("--ann_path", type=str, default=None)
     parser.add_argument("--output_dir", type=str, default=None)
     parser.add_argument("--warmup", type=int, default=None)

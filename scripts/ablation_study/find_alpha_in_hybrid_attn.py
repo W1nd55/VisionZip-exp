@@ -9,15 +9,7 @@ from subprocess import Popen, PIPE, CalledProcessError
 import subprocess
 import yaml
 
-# ==============================================================================
-# 0. Import VisionZip dependencies (assuming your project root is added to sys.path)
-# ------------------------------------------------------------------------------
-# Note: You need to ensure the visionzip package and scripts/model.py can be imported
-# Assuming the project root (VisionZip-exp) has been added to sys.path
-# If not, please add manually:
 sys.path.insert(0, os.path.abspath("."))
-# ==============================================================================
-
 
 # Global variable to store the best results
 BEST_RESULT = {"alpha": (0, 0, 0), "f1_score": -1.0}
@@ -32,32 +24,25 @@ def run_mme_evaluation(alpha_config: Tuple[float, float, float],
     from the generated mme_summary.csv. The score is the mean of the
     'mme_acc_plus' column across all rows (subtasks) in the summary.
 
-    现在通过“修改 cfg 中的 vision_zip_alpha”把 alpha 传给模型构建，而不是环境变量。
     """
     alpha1, alpha2, alpha3 = alpha_config
 
-    # 1. Define output directory (per alpha)
     out_root = (
         "eval_results/mme_eval_results/"
         f"mme_eval_results_hybrid_attn_dif_hybrid_a{alpha1:.4f}b{alpha2:.4f}c{alpha3:.4f}"
     )
     os.makedirs(out_root, exist_ok=True)
 
-    # 2. 根据 cfg_path 读取 YAML，更新 model.vision_zip_alpha，写到临时 cfg
     with open(cfg_path, "r") as f:
         cfg = yaml.safe_load(f)
 
-    # 确保路径存在
     if "model" not in cfg:
         cfg["model"] = {}
     cfg["model"]["vision_zip_alpha"] = [float(alpha1), float(alpha2), float(alpha3)]
 
-    # 可以把临时 cfg 写在对应 out_root 里，便于 debug
     tmp_cfg_path = os.path.join(out_root, "config_alpha.yaml")
     with open(tmp_cfg_path, "w") as f:
         yaml.safe_dump(cfg, f, sort_keys=False)
-
-    # 3. Construct the command to execute, 用临时 cfg
     command = [
         "python",
         "tools/mme_run_all.py",
@@ -73,7 +58,6 @@ def run_mme_evaluation(alpha_config: Tuple[float, float, float],
     print(f"cfg: {tmp_cfg_path}")
     print(f"Command: {' '.join(command)}")
 
-    # 4. Execute the evaluation command
     try:
         result = subprocess.run(
             command,

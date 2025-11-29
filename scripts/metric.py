@@ -11,6 +11,43 @@ _YESNO_RE = re.compile(r"\b(yes|no)\b", flags=re.IGNORECASE)
 # Metric Implement  #
 # ================= #
 
+def _normalize_docvqa_answer(s: str) -> str:
+    return (s or "").strip().lower()
+
+
+def _levenshtein_distance(a: str, b: str) -> int:
+    """
+    standard Levenshtein distance
+    """
+    if a == b:
+        return 0
+    la, lb = len(a), len(b)
+    if la == 0:
+        return lb
+    if lb == 0:
+        return la
+
+    if la > lb:
+        a, b = b, a
+        la, lb = lb, la
+
+    previous = list(range(la + 1))
+    current = [0] * (la + 1)
+
+    for j in range(1, lb + 1):
+        current[0] = j
+        bj = b[j - 1]
+        for i in range(1, la + 1):
+            cost = 0 if a[i - 1] == bj else 1
+            current[i] = min(
+                previous[i] + 1,      # deletion
+                current[i - 1] + 1,   # insertion
+                previous[i - 1] + cost  # substitution
+            )
+        previous, current = current, previous
+
+    return previous[la]
+
 def _normalize_text(s: str) -> str:
     return (s or "").strip().lower()
 
@@ -261,7 +298,7 @@ def _corpus_bleu(refs_all, hyps_all, max_n=4, smooth=True) -> Dict[str, float]:
     """
     refs_all: List[List[List[str]]]  # [i][k][t]
     hyps_all: List[List[str]]
-    返回 { 'bleu1':..., 'bleu2':..., 'bleu3':..., 'bleu4':... }
+    return { 'bleu1':..., 'bleu2':..., 'bleu3':..., 'bleu4':... }
     """
     assert len(refs_all) == len(hyps_all)
     N = max_n
@@ -273,7 +310,6 @@ def _corpus_bleu(refs_all, hyps_all, max_n=4, smooth=True) -> Dict[str, float]:
     for refs, hyp in zip(refs_all, hyps_all):
         hyp_len = len(hyp)
         total_hyp_len += hyp_len
-        # 选一个长度最接近 hyp 的 ref（标准 BLEU 做法）
         ref_lens = [len(r) for r in refs] or [0]
         closest_ref_len = min(ref_lens, key=lambda rl: abs(rl - hyp_len))
         total_ref_len += closest_ref_len
@@ -556,3 +592,49 @@ class CaptionCIDEr(BaseMetric):
             return {"cider": 0.0}
         score = _cider_score(self.refs_all, self.hyps_all, max_n=self.max_n)
         return {"cider": score}
+
+class DocVQAANLS(BaseMetric):
+
+    def __init__(self, threshold: float = 0.5):
+        self.threshold = threshold
+        self.n = 0
+        self.sum_anls = 0.0
+
+    def update(self, sample: Sample, pred_text: str, timings_ms: Dict[str, float]):
+        if not sample.answers:
+            return
+
+        pred = _normalize_docvqa_answer(pred_text)
+
+        if pred == "" and all(_normalize_docvqa_answer(a) == "" for a in sample.answers):
+            best_sim = 1.0
+        else:
+            best_sim = 0.0
+            for a in sample.answers:
+                gold = _normalize_docvqa_answer(a)
+                if pred == "" and gold == "":
+                    sim = 1.0
+                else:
+                    max_len = max(len(pred), len(gold))
+                    if max_len == 0:
+                        sim = 1.0
+                    else:
+                        dist = _levenshtein_distance(pred, gold)
+                        nld = dist / float(max_len)
+                        sim = 1.0 - nld
+                if sim > best_sim:
+                    best_sim = sim
+
+        if best_sim < self.threshold:
+            best_sim = 0.0
+
+        self.n += 1
+        self.sum_anls += best_sim
+
+    def compute(self) -> Dict[str, Any]:
+        if self.n == 0:
+            return {"docvqa_anls": 0.0, "docvqa_count": 0}
+        return {
+            "docvqa_anls": self.sum_anls / self.n,
+            "docvqa_count": self.n,
+        }

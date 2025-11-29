@@ -84,13 +84,6 @@ class CLIPVisionTower_SparseZip_EXP(nn.Module):
 
     @torch.no_grad()
     def forward(self, images):
-        """
-        注意：这个函数会被绑定成
-            llava.model.multimodal_encoder.clip_encoder.CLIPVisionTower.forward
-        所以 self 实际是 CLIPVisionTower 的实例，而不是这个类本身的实例。
-        """
-
-        # 1) list 输入：保持和原版一样的行为，返回 [B, T, C] 的 Tensor
         if isinstance(images, list):
             image_features = []
             for image in images:
@@ -103,11 +96,9 @@ class CLIPVisionTower_SparseZip_EXP(nn.Module):
                 image_features.append(feat)
 
             feats = torch.stack(image_features, dim=0)  # [B, T, C]
-            # SparseZip 在 list 模式下不做压缩，这里就没有 keep_idx
             self._last_keep_idx = None
             return feats
 
-        # 2) batch 输入：走 SparseZip compressor
         outs = self.vision_tower(
             images.to(device=self.device, dtype=self.dtype),
             output_hidden_states=True,
@@ -130,7 +121,6 @@ class CLIPVisionTower_SparseZip_EXP(nn.Module):
                 "so that vt._vz_comp is attached."
             )
 
-        # 让 compressor 自己决定 K（dynamic-K）
         dominant_num = None
 
         out_tokens, all_indices = self._vz_comp(
@@ -141,13 +131,12 @@ class CLIPVisionTower_SparseZip_EXP(nn.Module):
             dominant_num=dominant_num,
             weights_for_context=None,
         )
+        # print("out_tokens shape:", out_tokens.shape)
         # out_tokens: [B, K+1+ctx, C]
         # all_indices: [B, <=L]
 
         out_tokens = out_tokens.to(images.dtype)
 
-        # 把 indices 存起来，方便需要时从 vision tower 上取
         self._last_keep_idx = all_indices
 
-        # **兼容原始 CLIPVisionTower.forward：只返回特征 Tensor**
         return out_tokens

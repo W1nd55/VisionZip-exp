@@ -489,7 +489,7 @@ class VisionZipCompressor(nn.Module):
                         ctx_tokens = (target_hidden + aggregated_hidden)[0]             # [ctx_num,C]
 
             else:
-                # ====== SparseZip 的 kmeans + agglomerative merge ======
+                # ====== SparseZip kmeans + agglomerative merge ======
                 ctx_tokens = hierarchical_context_merge(
                     remain_hidden.unsqueeze(0),
                     remain_keys.unsqueeze(0),
