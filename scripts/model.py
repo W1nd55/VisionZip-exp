@@ -370,7 +370,6 @@ class LlavaSparseZipModel(BaseModel):
         extra_kwargs = {
             "device_map": None if is_macos else "auto",
             "torch_dtype": torch.float16,
-            "attn_implementation": "eager",
         }
         quant_attempts: List[Tuple[Dict[str, Any], str]]
         if is_macos:
