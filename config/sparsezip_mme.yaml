@@ -16,29 +16,29 @@ model:
   sparsezip:
     # Dynamic-K selection: K = round(log(var(scores)+eps) + c)
     dynamic_k: true
-    k_min: 8
-    k_max: 58  # Optimized: lower than baseline to reduce token count
+    k_min: 20            # INCREASED from 8 (less aggressive compression)
+    k_max: 48            # DECREASED from 58 (cap dominant tokens lower)
     dynk:
-      c: 7.0  # Optimized: lower average K for better latency
-      eps: 1.0e-6
+      c: 10.0            # INCREASED from 7.0 (shift K distribution higher)
+      eps: 1.0e-3        # INCREASED from 1e-6 (stabilize log)
 
     # Hybrid scoring weights and temps
     alphas:
       attn: 1.0
-      entropy: 0.3  # Optimized: enabled for better token selection (conservative)
-      mutual: 0.5   # Optimized: enabled for better token selection (conservative)
-    tau_feat: 0.2
-    tau_sim: 0.1
+      entropy: 0.6       # INCREASED from 0.3 (value entropy more)
+      mutual: 0.8        # INCREASED from 0.5 (value MI more)
+    tau_feat: 0.15       # DECREASED from 0.2 (sharper entropy)
+    tau_sim: 0.08        # DECREASED from 0.1 (sharper MI)
 
     # Cross-attention fusion weight (0.0 = off; requires extra wiring in LLM)
     cross_beta: 0.0
 
     # Contextual merging strategy
     merging:
-      contextual_num: 12  # Optimized: slightly lower for better latency
+      contextual_num: 20 # INCREASED from 12 (preserve more context)
       kmeans_init_factor: 2.0
-      kmeans_iters: 10
-      agglomerative: true
+      kmeans_iters: 1    # DECREASED from 10 (single-shot now)
+      agglomerative: false # DISABLED (not needed with single-shot)
     
     skip_hybrid_attn: false  # Optimized: enable hybrid scoring
     skip_dynamic_k:   false

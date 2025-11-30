@@ -11,25 +11,25 @@ model:
 
   sparsezip:
     dynamic_k: true
-    k_min: 8
-    k_max: 58  # Optimized: lower than baseline to reduce token count
+    k_min: 20            # INCREASED from 8
+    k_max: 48            # DECREASED from 58
     dynk:
-      c: 7.0  # Optimized: lower average K for better latency
-      eps: 1.0e-6
+      c: 10.0            # INCREASED from 7.0
+      eps: 1.0e-3        # INCREASED from 1e-6
 
     alphas:
       attn: 1.0
-      entropy: 0.3  # Optimized: conservative value
-      mutual: 0.5   # Optimized: conservative value
-    tau_feat: 0.2
-    tau_sim: 0.1
+      entropy: 0.6       # INCREASED from 0.3
+      mutual: 0.8        # INCREASED from 0.5
+    tau_feat: 0.15       # DECREASED from 0.2
+    tau_sim: 0.08        # DECREASED from 0.1
     cross_beta: 0.0
 
     merging:
-      contextual_num: 12  # Optimized: slightly lower for better latency
+      contextual_num: 20 # INCREASED from 12
       kmeans_init_factor: 2.0
-      kmeans_iters: 10
-      agglomerative: true
+      kmeans_iters: 1    # DECREASED from 10
+      agglomerative: false # DISABLED
     
     # Feature flags (explicit)
     skip_hybrid_attn: false  # Enable hybrid scoring
