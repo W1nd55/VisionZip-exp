@@ -973,6 +973,28 @@ class LlavaSparseZipModel(LlavaModel):
         kmeans_init_factor = float(merging_cfg.get("kmeans_init_factor", kmeans_init_factor))
         kmeans_iters       = int(merging_cfg.get("kmeans_iters",       kmeans_iters))
         agglomerative      = bool(merging_cfg.get("agglomerative",     agglomerative))
+        
+        
+        from llava.model.llava_arch import LlavaMetaForCausalLM as _LlavaMeta
+
+        if not getattr(_LlavaMeta, "_sparsezip_encode_images_patched", False):
+            _orig_encode_images = _LlavaMeta.encode_images
+
+            def encode_images_sparsezip_aware(self, images, *args, **kwargs):
+                if images is None:
+                    return None
+
+                image_features = self.get_vision_tower()(images)
+
+                if isinstance(image_features, tuple):
+                    image_features, _extra = image_features
+
+                image_features = self.get_model().mm_projector(image_features)
+                return image_features
+
+            _LlavaMeta.encode_images = encode_images_sparsezip_aware
+            _LlavaMeta._sparsezip_encode_images_patched = True
+        
 
         LlavaVisionZipModel._apply_visionzip_monkey_patches()
 
