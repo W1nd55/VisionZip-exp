@@ -11,30 +11,30 @@ model:
 
   sparsezip:
     dynamic_k: true
-    k_min: 20            # INCREASED from 8
-    k_max: 48            # DECREASED from 58
+    k_min: 32            # INCREASED from 20
+    k_max: 64            # INCREASED from 48
     dynk:
-      c: 10.0            # INCREASED from 7.0
-      eps: 1.0e-3        # INCREASED from 1e-6
+      c: 12.0            # INCREASED from 10.0
+      eps: 1.0e-3
 
     alphas:
       attn: 1.0
-      entropy: 0.6       # INCREASED from 0.3
-      mutual: 0.8        # INCREASED from 0.5
-    tau_feat: 0.15       # DECREASED from 0.2
-    tau_sim: 0.08        # DECREASED from 0.1
+      entropy: 0.8       # INCREASED from 0.6
+      mutual: 1.0        # INCREASED from 0.8
+    tau_feat: 0.15
+    tau_sim: 0.08
     cross_beta: 0.0
 
     merging:
-      contextual_num: 20 # INCREASED from 12
+      contextual_num: 32 # INCREASED from 20
       kmeans_init_factor: 2.0
-      kmeans_iters: 1    # DECREASED from 10
-      agglomerative: false # DISABLED
+      kmeans_iters: 1
+      agglomerative: false
     
     # Feature flags (explicit)
-    skip_hybrid_attn: false  # Enable hybrid scoring
-    skip_dynamic_k: false    # Enable dynamic-K
-    skip_ctx_merge: false    # Enable contextual merging
+    skip_hybrid_attn: false
+    skip_dynamic_k: false
+    skip_ctx_merge: false
 
 runner:
   dataset: pope
