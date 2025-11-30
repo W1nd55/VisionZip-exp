@@ -13,17 +13,18 @@ if [ -d "$WORK_DIR/miniforge3" ]; then
     rm -rf "$WORK_DIR/miniforge3"
 fi
 
-# Set cache and temp directories to use the large disk
-export TMPDIR="$WORK_DIR/tmp"
-export PIP_CACHE_DIR="$WORK_DIR/cache/pip"
-export CONDA_PKGS_DIRS="$WORK_DIR/cache/conda_pkgs"
-export HF_HOME="$WORK_DIR/cache/huggingface"
+# Respect externally provided cache/temp env vars (so users can point to a large disk)
+export TMPDIR="${TMPDIR:-$WORK_DIR/tmp}"
+export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$WORK_DIR/cache/pip}"
+export CONDA_PKGS_DIRS="${CONDA_PKGS_DIRS:-$WORK_DIR/cache/conda_pkgs}"
+export HF_HOME="${HF_HOME:-$WORK_DIR/cache/huggingface}"
 
 mkdir -p "$TMPDIR" "$PIP_CACHE_DIR" "$CONDA_PKGS_DIRS" "$HF_HOME"
 
-echo "💾 Configured directories on large disk:"
+echo "💾 Configured directories (effective):"
 echo "   TMPDIR=$TMPDIR"
 echo "   PIP_CACHE_DIR=$PIP_CACHE_DIR"
+echo "   CONDA_PKGS_DIRS=$CONDA_PKGS_DIRS"
 echo "   HF_HOME=$HF_HOME"
 
 # 1. Install Miniforge LOCALLY (Ignore system/home conda)
