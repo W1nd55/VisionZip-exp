@@ -370,6 +370,7 @@ class LlavaSparseZipModel(BaseModel):
         extra_kwargs = {
             "device_map": None if is_macos else "auto",
             "torch_dtype": torch.float16,
+            "attn_implementation": "sdpa",  # Required by SparseVLM
         }
         quant_attempts: List[Tuple[Dict[str, Any], str]]
         if is_macos:
