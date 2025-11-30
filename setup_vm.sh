@@ -3,23 +3,34 @@ set -e  # Exit on error
 
 echo "🚀 Starting SparseZip VM Setup..."
 
-# 1. Install Miniconda if not present
+# 1. Install Miniforge (Avoids Anaconda ToS issues)
+if [ -d "$HOME/miniconda3" ]; then
+    echo "⚠️  Found existing miniconda3. If you have ToS issues, run: rm -rf ~/miniconda3 and re-run this script."
+fi
+
 if ! command -v conda &> /dev/null; then
-    echo "📦 Installing Miniconda..."
-    mkdir -p ~/miniconda3
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
-    bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
-    rm -rf ~/miniconda3/miniconda.sh
-    source ~/miniconda3/bin/activate
+    echo "📦 Installing Miniforge..."
+    mkdir -p ~/miniforge3
+    wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" -O ~/miniforge3/miniforge.sh
+    bash ~/miniforge3/miniforge.sh -b -u -p ~/miniforge3
+    rm -rf ~/miniforge3/miniforge.sh
+    source ~/miniforge3/bin/activate
     conda init bash
 else
     echo "✅ Conda already installed."
+    # Try to source typical paths
+    source ~/miniforge3/bin/activate 2>/dev/null || source ~/miniconda3/bin/activate 2>/dev/null || true
 fi
+
+# Ensure conda is usable in this script
+eval "$(conda shell.bash hook)"
 
 # 2. Create/Activate Environment
 echo "🐍 Creating conda environment 'sparsezip'..."
-source ~/miniconda3/bin/activate
-conda create -n sparsezip python=3.10 -y || echo "Environment likely exists, skipping create."
+# Use -y to confirm, and handle case where env exists
+conda create -n sparsezip python=3.10 -y || echo "Environment might already exist."
+
+# Activate
 conda activate sparsezip
 
 # 3. Install Dependencies
