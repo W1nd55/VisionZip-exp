@@ -3,26 +3,41 @@ set -e  # Exit on error
 
 echo "🚀 Starting SparseZip VM Setup..."
 
-# 1. Install Miniforge (Avoids Anaconda ToS issues)
+# Get the current directory (assumed to be on the large disk)
+WORK_DIR=$(pwd)
+echo "📂 Working directory: $WORK_DIR"
+
+# Set cache and temp directories to use the large disk
+export TMPDIR="$WORK_DIR/tmp"
+export PIP_CACHE_DIR="$WORK_DIR/cache/pip"
+export CONDA_PKGS_DIRS="$WORK_DIR/cache/conda_pkgs"
+
+mkdir -p "$TMPDIR" "$PIP_CACHE_DIR" "$CONDA_PKGS_DIRS"
+
+echo "💾 Configured cache/temp dirs on large disk:"
+echo "   TMPDIR=$TMPDIR"
+echo "   PIP_CACHE_DIR=$PIP_CACHE_DIR"
+
+# 1. Install Miniforge to the local directory (Avoids filling up /home partition)
+INSTALL_DIR="$WORK_DIR/miniforge3"
+
 if [ -d "$HOME/miniconda3" ]; then
-    echo "⚠️  Found existing miniconda3. If you have ToS issues, run: rm -rf ~/miniconda3 and re-run this script."
+    echo "⚠️  Found existing miniconda3 in home. Ignoring it to use local installation."
 fi
 
-if ! command -v conda &> /dev/null; then
-    echo "📦 Installing Miniforge..."
-    mkdir -p ~/miniforge3
-    wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" -O ~/miniforge3/miniforge.sh
-    bash ~/miniforge3/miniforge.sh -b -u -p ~/miniforge3
-    rm -rf ~/miniforge3/miniforge.sh
-    source ~/miniforge3/bin/activate
-    conda init bash
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "📦 Installing Miniforge to $INSTALL_DIR..."
+    wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" -O "$WORK_DIR/miniforge.sh"
+    bash "$WORK_DIR/miniforge.sh" -b -u -p "$INSTALL_DIR"
+    rm "$WORK_DIR/miniforge.sh"
 else
-    echo "✅ Conda already installed."
-    # Try to source typical paths
-    source ~/miniforge3/bin/activate 2>/dev/null || source ~/miniconda3/bin/activate 2>/dev/null || true
+    echo "✅ Miniforge already installed in $INSTALL_DIR."
 fi
 
-# Ensure conda is usable in this script
+# Source the new installation
+source "$INSTALL_DIR/bin/activate"
+
+# Initialize conda for this shell
 eval "$(conda shell.bash hook)"
 
 # 2. Create/Activate Environment
@@ -35,13 +50,21 @@ conda activate sparsezip
 
 # 3. Install Dependencies
 echo "⬇️ Installing PyTorch and dependencies..."
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-pip install -r requirements.txt
-pip install transformers==4.37.2 tokenizers==0.15.2 accelerate==0.27.2
-pip install sentencepiece protobuf huggingface_hub
+# Ensure pip uses the large disk for caching
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118 --cache-dir "$PIP_CACHE_DIR"
+pip install -r requirements.txt --cache-dir "$PIP_CACHE_DIR"
+pip install transformers==4.37.2 tokenizers==0.15.2 accelerate==0.27.2 --cache-dir "$PIP_CACHE_DIR"
+pip install sentencepiece protobuf huggingface_hub --cache-dir "$PIP_CACHE_DIR"
 
 # 4. Download Datasets
 echo "📂 Downloading POPE and COCO datasets..."
 python scripts/dataset_download.py --dataset pope coco_val --output_dir datasets
 
-echo "🎉 Setup Complete! Run 'conda activate sparsezip' to start."
+# Create a helper script to activate the environment easily later
+echo "#!/bin/bash" > activate_env.sh
+echo "source $INSTALL_DIR/bin/activate" >> activate_env.sh
+echo "conda activate sparsezip" >> activate_env.sh
+chmod +x activate_env.sh
+
+echo "🎉 Setup Complete!"
+echo "👉 To start working, run: source ./activate_env.sh"
