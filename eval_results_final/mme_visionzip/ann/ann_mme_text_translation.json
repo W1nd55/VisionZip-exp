@@ -1,0 +1,602 @@
+[
+  {
+    "question_id": "0001_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0001.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'classic taste' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'classic taste' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0001",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0001",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0001_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0001.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'classic strawberry flavor' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'classic strawberry flavor' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0001",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0001",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0002_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0002.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'a delicious dinner' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'a delicious dinner' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0002",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0002",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0002_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0002.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'hamburger and chips' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'hamburger and chips' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0002",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0002",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0003_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0003.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'sunny weather' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'sunny weather' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0003",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0003",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0003_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0003.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'cold weather' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'cold weather' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0003",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0003",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0004_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0004.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'run very fast' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'run very fast' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0004",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0004",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0004_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0004.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'run very slow' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'run very slow' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0004",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0004",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0005_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0005.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'feeling happy' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'feeling happy' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0005",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0005",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0005_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0005.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'feeling bored' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'feeling bored' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0005",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0005",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0006_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0006.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'work hard together' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'work hard together' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0006",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0006",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0006_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0006.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'be filled with intrigue' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'be filled with intrigue' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0006",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0006",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0007_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0007.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'walking very slowly' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'walking very slowly' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0007",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0007",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0007_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0007.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'runing very slowly' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'runing very slowly' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0007",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0007",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0008_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0008.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'very proud' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'very proud' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0008",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0008",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0008_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0008.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'very thankful' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'very thankful' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0008",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0008",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0009_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0009.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'creative people' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'creative people' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0009",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0009",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0009_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0009.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'leading people' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'leading people' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0009",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0009",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0010_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0010.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'a beautiful garden' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'a beautiful garden' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0010",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0010",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0010_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0010.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'a beautiful campus' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'a beautiful campus' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0010",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0010",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0011_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0011.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'a difficult work' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'a difficult work' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0011",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0011",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0011_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0011.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'a easy work' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'a easy work' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0011",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0011",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0012_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0012.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'a small amount' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'a small amount' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0012",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0012",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0012_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0012.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'difficult and dangerous' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'difficult and dangerous' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0012",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0012",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0013_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0013.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'feeling frustrated' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'feeling frustrated' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0013",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0013",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0013_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0013.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'feeling relaxed' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'feeling relaxed' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0013",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0013",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0014_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0014.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'waiting for a long time' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'waiting for a long time' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0014",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0014",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0014_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0014.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'sleeping for a long time' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'sleeping for a long time' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0014",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0014",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0015_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0015.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'very powerful' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'very powerful' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0015",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0015",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0015_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0015.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'to be fragile throughout the world' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'to be fragile throughout the world' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0015",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0015",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0016_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0016.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'all talk and no action' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'all talk and no action' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0016",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0016",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0016_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0016.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'hands-on practice' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'hands-on practice' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0016",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0016",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0017_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0017.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'delicious fruit' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'delicious fruit' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0017",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0017",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0017_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0017.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'banana' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'banana' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0017",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0017",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0018_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0018.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'very unforgettable' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'very unforgettable' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0018",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0018",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0018_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0018.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'very happy' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'very happy' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0018",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0018",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0019_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0019.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'get along well' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'get along well' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0019",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0019",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0019_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0019.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'for own self-interest' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'for own self-interest' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0019",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0019",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0020_text_translation_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0020.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'rank first' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'rank first' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0020",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0020",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0020_text_translation_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/text_translation/0020.png",
+    "question": "Is it appropriate to translate the Chinese in the image into English 'to add the finishing touches' in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to translate the Chinese in the image into English 'to add the finishing touches' in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0020",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0020",
+      "pair": "neg"
+    }
+  }
+]
