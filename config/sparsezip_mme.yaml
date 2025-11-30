@@ -17,16 +17,16 @@ model:
     # Dynamic-K selection: K = round(log(var(scores)+eps) + c)
     dynamic_k: true
     k_min: 8
-    k_max: 64
+    k_max: 58  # Optimized: lower than baseline to reduce token count
     dynk:
-      c: 8.0
+      c: 7.0  # Optimized: lower average K for better latency
       eps: 1.0e-6
 
     # Hybrid scoring weights and temps
     alphas:
       attn: 1.0
-      entropy: 0
-      mutual: 0
+      entropy: 0.3  # Optimized: enabled for better token selection (conservative)
+      mutual: 0.5   # Optimized: enabled for better token selection (conservative)
     tau_feat: 0.2
     tau_sim: 0.1
 
@@ -35,14 +35,14 @@ model:
 
     # Contextual merging strategy
     merging:
-      contextual_num: 16
+      contextual_num: 12  # Optimized: slightly lower for better latency
       kmeans_init_factor: 2.0
       kmeans_iters: 10
       agglomerative: true
     
-    skip_hybrid_attn: true
+    skip_hybrid_attn: false  # Optimized: enable hybrid scoring
     skip_dynamic_k:   false
-    skip_ctx_merge:   true   
+    skip_ctx_merge:   false  # Optimized: enable contextual merging   
 
 runner:
   dataset: mme

@@ -64,7 +64,12 @@ class LlavaModel(BaseModel):
         print("[load] fp16 load success")
 
         # ---- move whole model to GPU/CPU ----
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.backends.mps.is_available():
+            device = torch.device("mps")
+        elif torch.cuda.is_available():
+            device = torch.device("cuda")
+        else:
+            device = torch.device("cpu")
         model.to(device)
         self._device = device
         print(f"[load] model moved to {self._device}")
@@ -363,6 +368,7 @@ class LlavaSparseZipModel(BaseModel):
         extra_kwargs = {
             "device_map": None if is_macos else "auto",
             "torch_dtype": torch.float16,
+            "attn_implementation": "eager",
         }
         quant_attempts: List[Tuple[Dict[str, Any], str]]
         if is_macos:
@@ -1100,7 +1106,12 @@ class LlavaVisionZipModelTextAware(BaseModel):
         )
         print("[load] fp16 load success")
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.backends.mps.is_available():
+            device = torch.device("mps")
+        elif torch.cuda.is_available():
+            device = torch.device("cuda")
+        else:
+            device = torch.device("cpu")
         model.to(device)
         self._device = device
         print(f"[load] model moved to {self._device}")

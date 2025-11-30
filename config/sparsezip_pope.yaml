@@ -6,30 +6,35 @@ model:
   temperature: 0.0
   max_new_tokens: 16
 
-  dominant: 64  # dynamic-K can override internally
-  contextual: 16  # baseline contextual tokens
+  dominant: 54  # dynamic-K can override internally
+  contextual: 12  # Optimized: slightly lower for better latency
 
   sparsezip:
     dynamic_k: true
     k_min: 8
-    k_max: 64
+    k_max: 58  # Optimized: lower than baseline to reduce token count
     dynk:
-      c: 8.0
+      c: 7.0  # Optimized: lower average K for better latency
       eps: 1.0e-6
 
     alphas:
       attn: 1.0
-      entropy: 0.4
-      mutual: 0.6
+      entropy: 0.3  # Optimized: conservative value
+      mutual: 0.5   # Optimized: conservative value
     tau_feat: 0.2
     tau_sim: 0.1
     cross_beta: 0.0
 
     merging:
-      contextual_num: 16
+      contextual_num: 12  # Optimized: slightly lower for better latency
       kmeans_init_factor: 2.0
       kmeans_iters: 10
       agglomerative: true
+    
+    # Feature flags (explicit)
+    skip_hybrid_attn: false  # Enable hybrid scoring
+    skip_dynamic_k: false    # Enable dynamic-K
+    skip_ctx_merge: false    # Enable contextual merging
 
 runner:
   dataset: pope

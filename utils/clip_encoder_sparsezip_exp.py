@@ -97,7 +97,7 @@ class CLIPVisionTower_SparseZip_EXP(nn.Module):
 
             feats = torch.stack(image_features, dim=0)  # [B, T, C]
             self._last_keep_idx = None
-            return feats
+            return feats, None
 
         outs = self.vision_tower(
             images.to(device=self.device, dtype=self.dtype),
@@ -139,4 +139,4 @@ class CLIPVisionTower_SparseZip_EXP(nn.Module):
 
         self._last_keep_idx = all_indices
 
-        return out_tokens
+        return out_tokens, all_indices
