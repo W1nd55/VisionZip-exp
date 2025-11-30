@@ -168,23 +168,11 @@ class LlavaModel(BaseModel):
 
         t1 = time.perf_counter()
         if img is not None:
-            # Preprocess image into a tensor.
-            # Send a single-element list so the processor returns a batched tensor
-            # and we avoid ambiguous dtype/shape handling when return_tensors='pt'.
-            try:
-                bf = self.image_processor(images=[img], return_tensors='pt')
-            except Exception:
-                # Fallback to preprocess API if direct call isn't available
-                bf = self.image_processor.preprocess([img], return_tensors='pt')
-
-            # bf['pixel_values'] should be a tensor of shape [1, C, H, W]
-            pv = bf.get('pixel_values') if isinstance(bf, dict) else None
-            if pv is None:
-                # Try indexing if the processor returned a BatchFeature-like object
-                pv = bf['pixel_values']
-
-            # Extract the single image tensor and move to device/half precision
-            image_tensor = pv[0].half().to(self.device())
+            # Preprocess image into a tensor
+            # Use preprocess() which is more stable across transformers versions
+            image_tensor = self.image_processor.preprocess(img, return_tensors='pt')['pixel_values']
+            # Keep batch dimension [1, C, H, W] and move to device
+            image_tensor = image_tensor.half().to(self.device())
         preprocess_ms = (time.perf_counter() - t1)*1000.0
 
         # Prompt construction
