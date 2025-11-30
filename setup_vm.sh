@@ -1,28 +1,39 @@
 #!/bin/bash
 set -e  # Exit on error
 
-echo "🚀 Starting SparseZip VM Setup..."
+echo "🚀 Starting SparseZip VM Setup (Local Disk Mode)..."
 
-# Get the current directory (assumed to be on the large disk)
+# Ensure we are on the large disk
 WORK_DIR=$(pwd)
 echo "📂 Working directory: $WORK_DIR"
+
+# CLEANUP: Remove broken/old installations from previous attempts
+if [ -d "$WORK_DIR/miniforge3" ]; then
+    echo "🗑️  Removing broken 'miniforge3' directory from previous install..."
+    rm -rf "$WORK_DIR/miniforge3"
+fi
 
 # Set cache and temp directories to use the large disk
 export TMPDIR="$WORK_DIR/tmp"
 export PIP_CACHE_DIR="$WORK_DIR/cache/pip"
 export CONDA_PKGS_DIRS="$WORK_DIR/cache/conda_pkgs"
+export HF_HOME="$WORK_DIR/cache/huggingface"
 
-mkdir -p "$TMPDIR" "$PIP_CACHE_DIR" "$CONDA_PKGS_DIRS"
+mkdir -p "$TMPDIR" "$PIP_CACHE_DIR" "$CONDA_PKGS_DIRS" "$HF_HOME"
 
-echo "💾 Configured cache/temp dirs on large disk:"
+echo "💾 Configured directories on large disk:"
 echo "   TMPDIR=$TMPDIR"
 echo "   PIP_CACHE_DIR=$PIP_CACHE_DIR"
+echo "   HF_HOME=$HF_HOME"
 
-# 1. Install Miniforge to the local directory (Avoids filling up /home partition)
-INSTALL_DIR="$WORK_DIR/miniforge3"
+# 1. Install Miniforge LOCALLY (Ignore system/home conda)
+INSTALL_DIR="$WORK_DIR/miniforge_local"
 
-if [ -d "$HOME/miniconda3" ]; then
-    echo "⚠️  Found existing miniconda3 in home. Ignoring it to use local installation."
+# Deactivate any existing conda (if installed)
+if command -v conda >/dev/null 2>&1; then
+    source "$(conda info --base)/etc/profile.d/conda.sh" 2>/dev/null || true
+    conda deactivate 2>/dev/null || true
+    conda deactivate 2>/dev/null || true
 fi
 
 if [ ! -d "$INSTALL_DIR" ]; then
@@ -34,25 +45,47 @@ else
     echo "✅ Miniforge already installed in $INSTALL_DIR."
 fi
 
-# Source the new installation
+# Source the NEW local installation
 source "$INSTALL_DIR/bin/activate"
-
-# Initialize conda for this shell
 eval "$(conda shell.bash hook)"
 
-# 2. Create/Activate Environment
-echo "🐍 Creating conda environment 'sparsezip'..."
-# Use -y to confirm, and handle case where env exists
-conda create -n sparsezip python=3.10 -y || echo "Environment might already exist."
+echo "🐍 Using Conda: $(which conda)"
 
-# Activate
-conda activate sparsezip
+# 2. Create/Activate Environment (Prefix install to keep it local)
+ENV_DIR="$WORK_DIR/env_sparsezip"
+echo "🐍 Creating conda environment in $ENV_DIR..."
+
+if [ ! -d "$ENV_DIR" ]; then
+    conda create -p "$ENV_DIR" python=3.10 -y
+else
+    echo "Environment directory exists."
+fi
+
+conda activate "$ENV_DIR"
 
 # 3. Install Dependencies
 echo "⬇️ Installing PyTorch and dependencies..."
-# Ensure pip uses the large disk for caching
+# Ensure standard temp envs point to our large-disk tmp
+export TMP="$TMPDIR"
+export TEMP="$TMPDIR"
+export XDG_CACHE_HOME="$WORK_DIR/cache"
+
+echo "Using TMPDIR=$TMPDIR, PIP_CACHE_DIR=$PIP_CACHE_DIR, CONDA_PKGS_DIRS=$CONDA_PKGS_DIRS"
+
+# Install PyTorch and related wheels (allow caching to avoid repeated downloads);
+# avoid --no-cache-dir because we want pip to reuse downloaded wheels in $PIP_CACHE_DIR
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118 --cache-dir "$PIP_CACHE_DIR"
-pip install -r requirements.txt --cache-dir "$PIP_CACHE_DIR"
+
+# Install repository-specific requirements (prefer visionzip-specific file if present)
+if [ -f "$WORK_DIR/requirements_A40_visionzip.txt" ]; then
+    pip install -r "$WORK_DIR/requirements_A40_visionzip.txt" --cache-dir "$PIP_CACHE_DIR"
+elif [ -f "$WORK_DIR/requirements_A40.txt" ]; then
+    pip install -r "$WORK_DIR/requirements_A40.txt" --cache-dir "$PIP_CACHE_DIR"
+else
+    echo "[warn] No requirements_A40*.txt found; skipping pip install -r"
+fi
+
+# Core transformers and utility packages
 pip install transformers==4.37.2 tokenizers==0.15.2 accelerate==0.27.2 --cache-dir "$PIP_CACHE_DIR"
 pip install sentencepiece protobuf huggingface_hub --cache-dir "$PIP_CACHE_DIR"
 
@@ -60,10 +93,13 @@ pip install sentencepiece protobuf huggingface_hub --cache-dir "$PIP_CACHE_DIR"
 echo "📂 Downloading POPE and COCO datasets..."
 python scripts/dataset_download.py --dataset pope coco_val --output_dir datasets
 
-# Create a helper script to activate the environment easily later
+# Create helper script
 echo "#!/bin/bash" > activate_env.sh
 echo "source $INSTALL_DIR/bin/activate" >> activate_env.sh
-echo "conda activate sparsezip" >> activate_env.sh
+echo "conda activate $ENV_DIR" >> activate_env.sh
+echo "export TMPDIR=$TMPDIR" >> activate_env.sh
+echo "export PIP_CACHE_DIR=$PIP_CACHE_DIR" >> activate_env.sh
+echo "export HF_HOME=$HF_HOME" >> activate_env.sh
 chmod +x activate_env.sh
 
 echo "🎉 Setup Complete!"
