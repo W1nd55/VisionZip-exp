@@ -1,0 +1,16 @@
+exact_match,0.7325
+count,400
+vqa_soft_acc,0.2441666666666659
+end2end_ms_p50,207.42925262451172
+end2end_ms_p95,211.9128494262695
+end2end_ms_avg,207.91434684753418
+load_ms_p50,7.007281001278898
+load_ms_p95,10.746167351317125
+load_ms_avg,7.029921140001534
+num_new_tokens_ms_p50,3.0
+num_new_tokens_ms_p95,3.0
+num_new_tokens_ms_avg,3.0025
+preprocess_ms_p50,22.503667500131996
+preprocess_ms_p95,31.05633555278473
+preprocess_ms_avg,23.226784835187573
+e2e_avg(ms),207.91434684753418

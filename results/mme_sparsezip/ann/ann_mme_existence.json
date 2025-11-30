@@ -1,0 +1,902 @@
+[
+  {
+    "question_id": "000000006040_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000006040.jpg",
+    "question": "Is there a train in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a train in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000006040",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000006040",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000006040_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000006040.jpg",
+    "question": "Is there a bed in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a bed in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000006040",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000006040",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000006471_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000006471.jpg",
+    "question": "Is there a baseball bat in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a baseball bat in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000006471",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000006471",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000006471_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000006471.jpg",
+    "question": "Is there a giraffe in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a giraffe in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000006471",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000006471",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000007108_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000007108.jpg",
+    "question": "Is there a elephant in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a elephant in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000007108",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000007108",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000007108_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000007108.jpg",
+    "question": "Is there a hair drier in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a hair drier in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000007108",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000007108",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000007816_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000007816.jpg",
+    "question": "Is there a motorcycle in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a motorcycle in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000007816",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000007816",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000007816_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000007816.jpg",
+    "question": "Is there a airplane in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a airplane in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000007816",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000007816",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000007977_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000007977.jpg",
+    "question": "Is there a skateboard in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a skateboard in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000007977",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000007977",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000007977_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000007977.jpg",
+    "question": "Is there a spoon in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a spoon in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000007977",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000007977",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000008844_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000008844.jpg",
+    "question": "Is there a person in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a person in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000008844",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000008844",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000008844_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000008844.jpg",
+    "question": "Is there a sink in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a sink in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000008844",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000008844",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000009590_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000009590.jpg",
+    "question": "Is there a bottle in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a bottle in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000009590",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000009590",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000009590_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000009590.jpg",
+    "question": "Is there a scissors in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a scissors in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000009590",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000009590",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000010363_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000010363.jpg",
+    "question": "Is there a bottle in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a bottle in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000010363",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000010363",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000010363_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000010363.jpg",
+    "question": "Is there a apple in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a apple in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000010363",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000010363",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000011197_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000011197.jpg",
+    "question": "Is there a car in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a car in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000011197",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000011197",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000011197_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000011197.jpg",
+    "question": "Is there a fork in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a fork in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000011197",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000011197",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000015254_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000015254.jpg",
+    "question": "Is there a spoon in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a spoon in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000015254",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000015254",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000015254_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000015254.jpg",
+    "question": "Is there a donut in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a donut in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000015254",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000015254",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000015517_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000015517.jpg",
+    "question": "Is there a bus in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a bus in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000015517",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000015517",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000015517_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000015517.jpg",
+    "question": "Is there a cow in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a cow in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000015517",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000015517",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000015746_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000015746.jpg",
+    "question": "Is there a fire hydrant in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a fire hydrant in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000015746",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000015746",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000015746_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000015746.jpg",
+    "question": "Is there a person in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a person in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000015746",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000015746",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000037751_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000037751.jpg",
+    "question": "Is there a backpack in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a backpack in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000037751",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000037751",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000037751_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000037751.jpg",
+    "question": "Is there a microwave in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a microwave in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000037751",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000037751",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000050145_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000050145.jpg",
+    "question": "Is there a bicycle in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a bicycle in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000050145",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000050145",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000050145_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000050145.jpg",
+    "question": "Is there a apple in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a apple in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000050145",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000050145",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000061418_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000061418.jpg",
+    "question": "Is there a chair in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a chair in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000061418",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000061418",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000061418_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000061418.jpg",
+    "question": "Is there a airplane in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a airplane in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000061418",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000061418",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000417779_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000417779.jpg",
+    "question": "Is there a car in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a car in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000417779",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000417779",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000417779_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000417779.jpg",
+    "question": "Is there a kite in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a kite in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000417779",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000417779",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000424521_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000424521.jpg",
+    "question": "Is there a skateboard in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a skateboard in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000424521",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000424521",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000424521_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000424521.jpg",
+    "question": "Is there a banana in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a banana in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000424521",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000424521",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000438304_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000438304.jpg",
+    "question": "Is there a sports ball in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a sports ball in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000438304",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000438304",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000438304_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000438304.jpg",
+    "question": "Is there a horse in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a horse in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000438304",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000438304",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000494427_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000494427.jpg",
+    "question": "Is there a laptop in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a laptop in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000494427",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000494427",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000494427_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000494427.jpg",
+    "question": "Is there a potted plant in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a potted plant in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000494427",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000494427",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000495448_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000495448.jpg",
+    "question": "Is there a cake in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a cake in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000495448",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000495448",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000495448_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000495448.jpg",
+    "question": "Is there a tie in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a tie in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000495448",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000495448",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000498463_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000498463.jpg",
+    "question": "Is there a refrigerator in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a refrigerator in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000498463",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000498463",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000498463_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000498463.jpg",
+    "question": "Is there a donut in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a donut in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000498463",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000498463",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000519039_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000519039.jpg",
+    "question": "Is there a truck in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a truck in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000519039",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000519039",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000519039_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000519039.jpg",
+    "question": "Is there a book in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a book in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000519039",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000519039",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000523241_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000523241.jpg",
+    "question": "Is there a car in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a car in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000523241",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000523241",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000523241_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000523241.jpg",
+    "question": "Is there a cell phone in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a cell phone in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000523241",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000523241",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000530162_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000530162.jpg",
+    "question": "Is there a umbrella in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a umbrella in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000530162",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000530162",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000530162_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000530162.jpg",
+    "question": "Is there a horse in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a horse in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000530162",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000530162",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000537812_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000537812.jpg",
+    "question": "Is there a chair in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a chair in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000537812",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000537812",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000537812_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000537812.jpg",
+    "question": "Is there a baseball bat in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a baseball bat in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000537812",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000537812",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000541952_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000541952.jpg",
+    "question": "Is there a clock in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a clock in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000541952",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000541952",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000541952_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000541952.jpg",
+    "question": "Is there a bottle in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a bottle in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000541952",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000541952",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000546626_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000546626.jpg",
+    "question": "Is there a bottle in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a bottle in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000546626",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000546626",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000546626_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000546626.jpg",
+    "question": "Is there a mouse in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a mouse in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000546626",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000546626",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000556000_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000556000.jpg",
+    "question": "Is there a chair in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a chair in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000556000",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000556000",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000556000_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000556000.jpg",
+    "question": "Is there a dog in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a dog in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000556000",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000556000",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000557258_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000557258.jpg",
+    "question": "Is there a toilet in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a toilet in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000557258",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000557258",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000557258_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000557258.jpg",
+    "question": "Is there a pizza in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a pizza in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000557258",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000557258",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "000000572956_existence_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000572956.jpg",
+    "question": "Is there a motorcycle in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a motorcycle in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "000000572956",
+    "pair": "pos",
+    "meta": {
+      "image_id": "000000572956",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "000000572956_existence_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/existence/000000572956.jpg",
+    "question": "Is there a bus in this image? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is there a bus in this image? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "000000572956",
+    "pair": "neg",
+    "meta": {
+      "image_id": "000000572956",
+      "pair": "neg"
+    }
+  }
+]
