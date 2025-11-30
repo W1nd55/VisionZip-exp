@@ -42,3 +42,4 @@ runner:
   output_dir: ./outputs_eval
   warmup: 5
   seed: 42
+  attn_implementation: "eager"
