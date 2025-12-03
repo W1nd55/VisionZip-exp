@@ -23,7 +23,7 @@ model:
       mutual: 1.0        # INCREASED from 0.8
     tau_feat: 0.15
     tau_sim: 0.08
-    cross_beta: 0.0
+    cross_beta: 0.3  # ENABLED for text-aware compression
 
     merging:
       contextual_num: 32 # INCREASED from 20

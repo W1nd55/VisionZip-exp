@@ -1063,6 +1063,44 @@ class LlavaSparseZipModel(LlavaModel):
               f"alphas=({alphas.attn},{alphas.entropy},{alphas.mutual}), "
               f"dynamic_k={use_dynamic_k}, skip_ctx_merge={skip_ctx_merge}, "
               f"skip_hybrid_attn={skip_hybrid_attn}, skip_dynamic_k={skip_dynamic_k}")
+        
+        # Store text embeddings for cross-attention
+        self._current_text_embeds = None
+    
+    def prepare_inputs(self, sample: Sample) -> Dict[str, Any]:
+        """Override to encode text and store embeddings for cross-attention."""
+        # Call parent's prepare_inputs to get standard inputs
+        inputs = super().prepare_inputs(sample)
+        
+        # If cross_beta > 0, encode the text prompt for cross-attention
+        if self._sparsezip_cfg.cross_beta > 0.0:
+            # Extract just the question text (without image token)
+            prompt_text = sample.prompt
+            
+            # Tokenize the text only (without image placeholder)
+            with torch.no_grad():
+                text_tokens = self.tokenizer(
+                    prompt_text,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=77  # CLIP-style max length
+                )
+                text_input_ids = text_tokens["input_ids"].to(self.device())
+                
+                # Get text embeddings from the LLM's embedding layer
+                text_embeds = self.model.get_input_embeddings()(text_input_ids)
+                
+                # Store for vision tower to access
+                self._current_text_embeds = text_embeds
+                
+                # Also store in the vision tower for access during forward
+                vt = getattr(self.model, "model", None)
+                vt = getattr(vt, "vision_tower", None)
+                if vt is not None:
+                    vt._text_embeds = text_embeds
+        
+        return inputs
 
 
 class LlavaVisionZipModelTextAware(BaseModel):

@@ -30,8 +30,8 @@ model:
     tau_feat: 0.15
     tau_sim: 0.08
 
-    # Cross-attention fusion weight (0.0 = off; requires extra wiring in LLM)
-    cross_beta: 0.0
+    # Cross-attention fusion weight (ENABLED for text-aware compression)
+    cross_beta: 0.3
 
     # Contextual merging strategy
     merging:
