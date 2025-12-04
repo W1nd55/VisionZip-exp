@@ -110,6 +110,32 @@ def build_model_sparsevlm(model_cfg: dict):
     }
     return SparseVLMModel(**kwargs)
 
+def build_model_hybrid(model_cfg: dict):
+    from scripts.model import LlavaVisionZipHybridModel
+    kwargs = {
+        "model_path":     _get(model_cfg, "model_path"),
+        "dominant":       int(_get(model_cfg, "dominant", 54)),  
+        "contextual":     int(_get(model_cfg, "contextual", 10)), 
+        "temperature":    float(_get(model_cfg, "temperature", 0.0)),
+        "max_new_tokens": int(_get(model_cfg, "max_new_tokens", 16)),
+    }
+    if kwargs["model_path"] is None:
+        raise ValueError("model.model_path is required for hybrid model")
+    return LlavaVisionZipHybridModel(**kwargs)
+
+def build_model_textaware(model_cfg: dict):
+    from scripts.model import LlavaVisionZipTextAwareModel
+    kwargs = {
+        "model_path":     _get(model_cfg, "model_path"),
+        "dominant":       int(_get(model_cfg, "dominant", 54)),  
+        "contextual":     int(_get(model_cfg, "contextual", 10)), 
+        "temperature":    float(_get(model_cfg, "temperature", 0.0)),
+        "max_new_tokens": int(_get(model_cfg, "max_new_tokens", 16)),
+    }
+    if kwargs["model_path"] is None:
+        raise ValueError("model.model_path is required for hybrid model")
+    return LlavaVisionZipTextAwareModel(**kwargs)
+
 def build_model(model_cfg: dict):
     mtype = (_get(model_cfg, "model_type", "llava") or "llava").lower()
     if mtype == "llava":
@@ -124,6 +150,10 @@ def build_model(model_cfg: dict):
         return build_model_sparsezip(model_cfg)
     if mtype == "sparsevlm":
         return build_model_sparsevlm(model_cfg)
+    if mtype == "hybrid":
+        return build_model_hybrid(model_cfg)
+    if mtype == "textaware":
+        return build_model_textaware(model_cfg)
     raise ValueError(f"Unknown model_type: {mtype}")
 
 # -------------------- Dataset/Metric builders --------------------
@@ -188,7 +218,7 @@ if __name__ == "__main__":
 
     # Arguments only passed to override YAML values (None = no override)
     # Override 'model' section
-    parser.add_argument("--model_type", type=str, default=None, choices=["llava_vzip", "sparsezip", "sparsevlm", "llava"]) 
+    parser.add_argument("--model_type", type=str, default=None, choices=["llava_vzip", "sparsezip", "sparsevlm", "llava", "hybrid", "textaware"]) 
     parser.add_argument("--model_path", type=str, default=None)
     parser.add_argument("--dominant", type=int, default=None)
     parser.add_argument("--contextual", type=int, default=None)

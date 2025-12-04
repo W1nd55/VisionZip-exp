@@ -7,6 +7,13 @@ from scripts.abstract import BaseModel, Sample
 import gc
 import sys
 import os
+from utils.hybrid_sparsifier import HybridSparsifier, HybridSparsifierConfig
+from utils.hybrid_llava_patches import patch_llava_multimodal_for_hybrid
+from utils.hybrid_llama_block_patch import install_hybrid_on_llama
+from utils.visionzip_textaware import TextContext
+from utils.clip_encoder_textaware import clipvisiontower_visionzip_textaware_forward
+# get_token_importance_weights, STOP_WORDS, INSTRUCTION_WORDS
+
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 visionzip_parent_dir = os.path.join(current_dir, os.pardir, 'models/VisionZip')
@@ -60,6 +67,7 @@ class LlavaModel(BaseModel):
             model_name=model_name,
             device_map=None, 
             torch_dtype=torch.float16,
+            attn_implementation="eager",
         )
         print("[load] fp16 load success")
 
@@ -168,17 +176,35 @@ class LlavaModel(BaseModel):
             image_tensor = image_tensor.to(self.device())
         preprocess_ms = (time.perf_counter() - t1)*1000.0
 
+        # # Prompt construction
+        # conv = self.conv_templates["llava_v1"].copy()
+        # image_placeholder = self.DEFAULT_IMAGE_TOKEN
+        # # Handle cases where the model expects start/end tokens around the image token
+        # if getattr(self.model.config, "mm_use_im_start_end", False):
+        #     image_placeholder = self.DEFAULT_IM_START_TOKEN + self.DEFAULT_IMAGE_TOKEN + self.DEFAULT_IM_END_TOKEN
+        
+        # # Format the full input string
+        # full_user_input = image_placeholder + "\n" + sample.prompt
+        # conv.append_message(conv.roles[0], full_user_input)
+        # conv.append_message(conv.roles[1], None) # Append an empty assistant message to complete the prompt
+        # final_prompt_string = conv.get_prompt()
         # Prompt construction
         conv = self.conv_templates["llava_v1"].copy()
-        image_placeholder = self.DEFAULT_IMAGE_TOKEN
-        # Handle cases where the model expects start/end tokens around the image token
-        if getattr(self.model.config, "mm_use_im_start_end", False):
-            image_placeholder = self.DEFAULT_IM_START_TOKEN + self.DEFAULT_IMAGE_TOKEN + self.DEFAULT_IM_END_TOKEN
-        
-        # Format the full input string
-        full_user_input = image_placeholder + "\n" + sample.prompt
+
+        if img is not None:
+            image_placeholder = self.DEFAULT_IMAGE_TOKEN
+            if getattr(self.model.config, "mm_use_im_start_end", False):
+                image_placeholder = (
+                    self.DEFAULT_IM_START_TOKEN
+                    + self.DEFAULT_IMAGE_TOKEN
+                    + self.DEFAULT_IM_END_TOKEN
+                )
+            full_user_input = image_placeholder + "\n" + sample.prompt
+        else:
+            full_user_input = sample.prompt
+
         conv.append_message(conv.roles[0], full_user_input)
-        conv.append_message(conv.roles[1], None) # Append an empty assistant message to complete the prompt
+        conv.append_message(conv.roles[1], None)  # assistant 空白
         final_prompt_string = conv.get_prompt()
 
         # Tokenize the final prompt string using the custom/wrapped function
@@ -239,7 +265,327 @@ class LlavaModel(BaseModel):
             "num_new_tokens": int(max(gen_len, 0)),
         }
         return {"text": text, **timings_ms}
+
+
     
+class LlavaVisionZipModel(LlavaModel):
+    """
+    LLAVA + VisionZip: Only does two extra things during initialization:
+        1) monkey-patch CLIP's forward methods
+        2) wrap the model with visionzip()  
+    All other prepare_inputs / generate reuse LlavaModel's implementation.
+    """
+    def __init__(
+        self,
+        model_path: str,
+        dominant: int = 54,
+        contextual: int = 10,
+        temperature: float = 0.2,
+        max_new_tokens: int = 256,
+    ):
+        # ---- monkey patch CLIP ----
+        self._apply_visionzip_monkey_patches()
+
+        super().__init__(
+            model_path=model_path,
+            temperature=temperature,
+            max_new_tokens=max_new_tokens,
+        )
+
+        from visionzip import visionzip as _visionzip
+        self.model = _visionzip(self.model, dominant=dominant, contextual=contextual)
+        self.model.eval()
+
+    @staticmethod
+    def _apply_visionzip_monkey_patches():
+        """
+        make sure CLIP's encoder layer / attention forward methods are patched by VisionZip versions.
+        This function is designed to be idempotent: multiple calls will only apply the patch once.
+        """
+        from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
+        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
+
+        if getattr(CLIPAttention, "_visionzip_patched", False):
+            return
+
+        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
+        CLIPAttention.forward = CLIPAttention_forward
+
+        CLIPAttention._visionzip_patched = True
+
+class LlavaVisionZipTextAwareModel(LlavaVisionZipModel):
+    """
+    Innovation: Text-Aware VisionZip
+    In CLIPVisionTower.forward of VisionZip, the dominant selection is changed to be Text-Aware.
+    The forward pass of the encoder layers is no longer modified (in the primary initialization logic).
+    """
+    def __init__(
+        self,
+        model_path: str,
+        dominant: int = 54,
+        contextual: int = 10,
+        temperature: float = 0.2,
+        max_new_tokens: int = 256,
+        vis_alpha: float = 0.6,
+        prune_last_k: int = 0,   # No longer used, parameter kept for compatibility
+    ):
+        # 1) Run VisionZip wrapper first (includes CLIP monkey-patch + visionzip wrapper)
+        super().__init__(
+            model_path=model_path,
+            dominant=dominant,
+            contextual=contextual,
+            temperature=temperature,
+            max_new_tokens=max_new_tokens,
+        )
+
+        self.vis_alpha    = vis_alpha
+        self.prune_last_k = prune_last_k  # Not used now
+
+        import torch.nn as nn
+
+        # ======================================================
+        # 2) Determine dimensions (LLM & Vision) + Build Text Projector
+        # ======================================================
+        core_model = self.model
+        if hasattr(core_model, "get_model"):
+            core_model = core_model.get_model()
+        
+        # 2.1 Vision dim
+        try:
+            vision_tower = core_model.get_vision_tower()
+            vision_hidden_size = vision_tower.config.hidden_size
+        except Exception:
+            vision_hidden_size = 1024
+            print(f"[VisionZip+] Warning: Could not detect vision dim, using default {vision_hidden_size}")
+
+        # 2.2 LLM dim
+        try:
+            if hasattr(self.model, "model") and hasattr(self.model.model, "embed_tokens"):
+                llm_hidden_size = self.model.model.embed_tokens.weight.shape[1]
+            elif hasattr(core_model, "embed_tokens"):
+                llm_hidden_size = core_model.embed_tokens.weight.shape[1]
+            else:
+                llm_hidden_size = getattr(self.model.config, "hidden_size", 4096)
+        except Exception:
+            llm_hidden_size = 4096
+            print(f"[VisionZip+] Warning: Could not detect LLM dim, using default {llm_hidden_size}")
+
+        print(f"[VisionZip+] Detected Dims -> Vision: {vision_hidden_size}, LLM: {llm_hidden_size}")
+
+        # 3) Search for mm_projector and extract the first Linear layer as Vision->LLM weights
+        found_weights = None
+
+        def find_module_by_name(root_module, target_name="mm_projector"):
+            for name, module in root_module.named_modules():
+                if name.endswith(target_name):
+                    return module
+            return None
+
+        mm_proj_module = find_module_by_name(self.model, "mm_projector")
+        
+        # if mm_proj_module is not None:
+        #     print(f"[VisionZip+] Found projector module: {type(mm_proj_module)}")
+        #     if isinstance(mm_proj_module, nn.Linear):
+        #         if mm_proj_module.in_features == vision_hidden_size:
+        #             found_weights = mm_proj_module.weight
+        #     elif isinstance(mm_proj_module, (nn.Sequential, nn.ModuleList)):
+        #         for sub_m in mm_proj_module.modules():
+        #             if isinstance(sub_m, nn.Linear) and sub_m.in_features == vision_hidden_size:
+        #                 print(f"[VisionZip+] Extracted weights from MLP layer: {sub_m}")
+        #                 found_weights = sub_m.weight
+        #                 break
+        if mm_proj_module is not None:
+            print(f"[VisionZip+] Found projector module: {type(mm_proj_module)}")
+            # No longer extracting weights / No longer building text_projector manually
+            self.mm_projector = mm_proj_module
+        else:
+            self.mm_projector = None
+
+        # 4) Build the Text -> Vision Inverse Projector and register it to TextContext
+        if found_weights is not None:
+            target_in_dim  = found_weights.shape[0]  # typically 4096
+            target_out_dim = found_weights.shape[1]  # typically 1024
+
+            self.text_projector = nn.Linear(target_in_dim, target_out_dim, bias=False)
+            with torch.no_grad():
+                self.text_projector.weight.copy_(found_weights.T)
+
+            print(f"[VisionZip+] ✅ Successfully built Text-Aware Projector using Pretrained Weights.")
+            self.text_projector.requires_grad_(False)
+            self.text_projector.to(device=self.device(), dtype=torch.float16)
+            TextContext.set_projector(self.text_projector)
+        else:
+            print("[VisionZip+] ❌ CRITICAL: mm_projector not found anywhere! Text-Aware disabled.")
+            self.text_projector = None
+            TextContext.set_projector(None)
+
+        # ======================================================
+        # 5) Correctly patch Text-Aware forward onto CLIPVisionTower_VisionZip
+        # ======================================================
+        try:
+            backbone = self.model
+            if hasattr(backbone, "get_model"):
+                backbone = backbone.get_model()
+
+            # What we get here is the CLIPVisionTower_VisionZip wrapped by VisionZip
+            vt = backbone.get_vision_tower()
+
+            # # Some implementations require explicit load_model
+            # if hasattr(vt, "load_model"):
+            #     try:
+            #         vt.load_model()
+            #     except Exception:
+            #         pass
+
+            # # Do NOT do vt = vt.vision_tower anymore, otherwise it becomes CLIPVisionModel
+
+            # # Attach a vis_alpha attribute to CLIPVisionTower_VisionZip, which is used by Text-Aware forward
+            # setattr(vt, "vis_alpha", float(self.vis_alpha))
+
+            # vt.forward = clipvisiontower_visionzip_textaware_forward.__get__(vt, vt.__class__)
+            
+            
+            setattr(vt, "vis_alpha", float(self.vis_alpha))
+            setattr(vt, "mm_projector", self.mm_projector)  # <-- New: Attach mm_projector here
+            vt.forward = clipvisiontower_visionzip_textaware_forward.__get__(vt, vt.__class__)
+
+            print("[VisionZip+] ✅ Text-Aware dominant scoring patched on CLIPVisionTower_VisionZip.forward")
+        except Exception as e:
+            print(f"[VisionZip+] ❌ Failed to patch Text-Aware forward on CLIPVisionTower_VisionZip: {e}")
+        
+    def _apply_text_aware_patches(self, last_k: int = 1):
+        """
+        Enable Text-Aware VisionZip in the last few layers of the CLIP vision encoder.
+        Modification strategy: Apply to `last_k` layers starting from the [second to last layer].
+        Skip the last layer (Last Layer) and keep its original VisionZip behavior to ensure output feature stability.
+        Example: 24-layer model, last_k=2 -> Patch layers [21, 22], skip 23.
+        """
+        from utils.visionzip_textaware import text_aware_visionzip_layer_forward
+
+        backbone = self.model.get_model()
+        vision_tower = backbone.get_vision_tower()
+
+        # In some implementations, the real model inside CLIPVisionTower is in .vision_tower
+        vt = vision_tower
+        if hasattr(vt, "load_model"):
+            try:
+                vt.load_model()
+            except Exception:
+                pass
+
+        if hasattr(vt, "vision_tower"):
+            vt = vt.vision_tower
+
+        # Try various common structures to locate layers
+        encoder_layers = None
+
+        # 1) HuggingFace CLIP
+        if hasattr(vt, "vision_model") and hasattr(vt.vision_model, "encoder"):
+            enc = vt.vision_model.encoder
+            if hasattr(enc, "layers"):
+                encoder_layers = enc.layers
+
+        # 2) Direct encoder.layers
+        if encoder_layers is None and hasattr(vt, "encoder"):
+            enc = vt.encoder
+            if hasattr(enc, "layers"):
+                encoder_layers = enc.layers
+
+        # 3) OpenCLIP / TIMM
+        if encoder_layers is None and hasattr(vt, "transformer") and hasattr(vt.transformer, "resblocks"):
+            encoder_layers = vt.transformer.resblocks
+
+        if encoder_layers is None:
+            print("[VisionZip+] ❗ Cannot locate encoder layers in vision tower; "
+                  "Text-Aware patches are skipped.")
+            return
+
+        # =========================================================
+        # [Modification] Calculate target layer indices: Skip the last layer
+        # =========================================================
+        num_layers = len(encoder_layers)
+        
+        # Set end index to num_layers - 1 (i.e., excluding the last layer)
+        end_idx = max(0, num_layers - 1)
+        
+        # Set start index to end_idx - last_k
+        start_idx = max(0, end_idx - last_k)
+        
+        # Generate target index set
+        target_idxs = set(range(start_idx, end_idx))
+        
+        print(f"[VisionZip+] Text-Aware prune strategy: Skip Last Layer.")
+        print(f"[VisionZip+] Target layers indices: {sorted(target_idxs)} (Total: {num_layers} layers)")
+
+        for idx, layer in enumerate(encoder_layers):
+            # Mark layer index
+            setattr(layer, "_layer_idx", idx)
+
+            # Save VisionZip original forward
+            if not hasattr(layer, "_vz_original_forward"):
+                layer._vz_original_forward = layer.forward
+
+            # Inject parameters
+            layer.min_tokens_floor = getattr(layer, "min_tokens_floor", self._safety_floor)
+            layer.keep_rate = getattr(layer, "keep_rate", 0.5)
+            layer.vis_alpha = self.vis_alpha
+
+            if idx in target_idxs:
+                # Hit target interval: Use Text-Aware Forward
+                def make_forward(l):
+                    def forward(
+                        hidden_states,
+                        attention_mask=None,
+                        causal_attention_mask=None,
+                        output_attentions=False,
+                    ):
+                        return text_aware_visionzip_layer_forward(
+                            l,
+                            hidden_states,
+                            attention_mask,
+                            causal_attention_mask,
+                            output_attentions,
+                        )
+                    return forward
+
+                layer.forward = make_forward(layer)
+            else:
+                # Last layer or other non-target layers: Restore/Keep VisionZip original Forward
+                # This ensures the last layer still performs VisionZip's regular Merge/Prune (if any),
+                # but is not interfered with by Text-Aware logic
+                layer.forward = layer._vz_original_forward
+
+        print("[VisionZip+] Text-Aware Monkey Patch Applied (Skipping last layer).")
+        
+    @torch.inference_mode()
+    def prepare_inputs(self, sample: Sample) -> Dict[str, Any]:
+        inputs = super().prepare_inputs(sample)
+        input_ids = inputs["input_ids"]  # (B, Seq)
+
+        try:
+            embed_layer = self.model.model.embed_tokens
+
+            image_token_index = getattr(self, "IMAGE_TOKEN_INDEX", -200)
+            safe_input_ids = input_ids.clone()
+            is_img_token = (safe_input_ids == image_token_index)
+            safe_input_ids[is_img_token] = 0  # Prevent negative index
+
+            with torch.no_grad():
+                txt_embeds = embed_layer(safe_input_ids)  # (B, L, D)
+
+                # Average only on non-image tokens
+                mask = (~is_img_token).float().unsqueeze(-1)  # (B, L, 1)
+                sum_embeds = (txt_embeds * mask).sum(dim=1)
+                num_valid  = mask.sum(dim=1)
+                query_vec  = sum_embeds / (num_valid + 1e-6)  # (B, D)
+
+                TextContext.set_text_query(query_vec.unsqueeze(1))
+        except Exception as e:
+            print(f"[Warn] Failed to extract text embeddings: {e}")
+            TextContext.set_text_query(None)
+
+        return inputs
+
 class LlavaSparseZipModel(BaseModel):
     """
     Wrap your existing single-sample pipeline; keep it deterministic & timed.
@@ -601,17 +947,36 @@ class LlavaSparseZipModel(BaseModel):
         preprocess_ms = (time.perf_counter() - t1)*1000.0
 
         # Prompt construction
-        conv = self.conv_templates["llava_v1"].copy()
-        image_placeholder = self.DEFAULT_IMAGE_TOKEN
-        # Handle cases where the model expects start/end tokens around the image token
-        if getattr(self.model.config, "mm_use_im_start_end", False):
-            image_placeholder = self.DEFAULT_IM_START_TOKEN + self.DEFAULT_IMAGE_TOKEN + self.DEFAULT_IM_END_TOKEN
+        # conv = self.conv_templates["llava_v1"].copy()
+        # image_placeholder = self.DEFAULT_IMAGE_TOKEN
+        # # Handle cases where the model expects start/end tokens around the image token
+        # if getattr(self.model.config, "mm_use_im_start_end", False):
+        #     image_placeholder = self.DEFAULT_IM_START_TOKEN + self.DEFAULT_IMAGE_TOKEN + self.DEFAULT_IM_END_TOKEN
         
-        # Format the full input string
-        full_user_input = image_placeholder + "\n" + sample.prompt
+        # # Format the full input string
+        # full_user_input = image_placeholder + "\n" + sample.prompt
+        # conv.append_message(conv.roles[0], full_user_input)
+        # conv.append_message(conv.roles[1], None) # Append an empty assistant message to complete the prompt
+        # final_prompt_string = conv.get_prompt()
+        # Prompt construction
+        conv = self.conv_templates["llava_v1"].copy()
+
+        if img is not None:
+            image_placeholder = self.DEFAULT_IMAGE_TOKEN
+            if getattr(self.model.config, "mm_use_im_start_end", False):
+                image_placeholder = (
+                    self.DEFAULT_IM_START_TOKEN
+                    + self.DEFAULT_IMAGE_TOKEN
+                    + self.DEFAULT_IM_END_TOKEN
+                )
+            full_user_input = image_placeholder + "\n" + sample.prompt
+        else:
+            full_user_input = sample.prompt
+
         conv.append_message(conv.roles[0], full_user_input)
-        conv.append_message(conv.roles[1], None) # Append an empty assistant message to complete the prompt
+        conv.append_message(conv.roles[1], None)
         final_prompt_string = conv.get_prompt()
+
 
         # Tokenize the final prompt string using the custom/wrapped function
         ids = self.tokenizer_image_token(final_prompt_string)
@@ -667,51 +1032,6 @@ class LlavaSparseZipModel(BaseModel):
             "num_new_tokens": int(max(gen_len, 0)),
         }
         return {"text": text, **timings_ms}
-    
-class LlavaVisionZipModel(LlavaModel):
-    """
-    LLAVA + VisionZip: Only does two extra things during initialization:
-        1) monkey-patch CLIP's forward methods
-        2) wrap the model with visionzip()  
-    All other prepare_inputs / generate reuse LlavaModel's implementation.
-    """
-    def __init__(
-        self,
-        model_path: str,
-        dominant: int = 54,
-        contextual: int = 10,
-        temperature: float = 0.2,
-        max_new_tokens: int = 256,
-    ):
-        # ---- monkey patch CLIP ----
-        self._apply_visionzip_monkey_patches()
-
-        super().__init__(
-            model_path=model_path,
-            temperature=temperature,
-            max_new_tokens=max_new_tokens,
-        )
-
-        from visionzip import visionzip as _visionzip
-        self.model = _visionzip(self.model, dominant=dominant, contextual=contextual)
-        self.model.eval()
-
-    @staticmethod
-    def _apply_visionzip_monkey_patches():
-        """
-        make sure CLIP's encoder layer / attention forward methods are patched by VisionZip versions.
-        This function is designed to be idempotent: multiple calls will only apply the patch once.
-        """
-        from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
-        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
-
-        if getattr(CLIPAttention, "_visionzip_patched", False):
-            return
-
-        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
-        CLIPAttention.forward = CLIPAttention_forward
-
-        CLIPAttention._visionzip_patched = True
 
 class LlavaVisionZipModelHybridAttn(LlavaVisionZipModel):
     def __init__(self, model_path: str, dominant: int=54, contextual: int=10,
@@ -1079,101 +1399,192 @@ class LlavaSparseZipModel(LlavaModel):
               f"skip_hybrid_attn={skip_hybrid_attn}, skip_dynamic_k={skip_dynamic_k}")
 
 
-class LlavaVisionZipModelTextAware(BaseModel):
-    """
-    LLaVA + VisionZip + Text-aware encoder-side token selection
-    """
+# ========================= #
+# LLaVA + VisionZip + Hybrid Sparsifier (text-aware, train-free)
+# ========================= #
+class LlavaVisionZipHybridModel(LlavaVisionZipModel):
 
     def __init__(
         self,
         model_path: str,
-        dominant: int = 54,
-        contextual: int = 10,
-        alpha: float = 0.5,
+        # 1. Change: Significantly increase 'dominant', letting VisionZip only perform deduplication 
+        # to retain more information.
+        dominant: int = 256,  
+        contextual: int = 50, # Increase this as well
         temperature: float = 0.2,
         max_new_tokens: int = 256,
     ):
-        from transformers import CLIPModel, AutoTokenizer
-        from llava.model.builder import load_pretrained_model
-        from llava.mm_utils import get_model_name_from_path
-        from llava.constants import (
-            IMAGE_TOKEN_INDEX,
-            DEFAULT_IMAGE_TOKEN,
-            DEFAULT_IM_START_TOKEN,
-            DEFAULT_IM_END_TOKEN,
-        )
-        from llava.conversation import conv_templates
+        self._hybrid_dominant = int(dominant)
 
-        # ---- 1. monkey patch CLIPEncoderLayer / CLIPAttention（VisionZip） ----
-        from transformers.models.clip.modeling_clip import CLIPAttention, CLIPEncoderLayer
-        from visionzip.utils import CLIPAttention_forward, CLIP_EncoderLayer_forward
+        from utils.hybrid_llava_patches import patch_llava_multimodal_for_hybrid
+        patch_llava_multimodal_for_hybrid()
 
-        CLIPEncoderLayer.forward = CLIP_EncoderLayer_forward
-        CLIPAttention.forward = CLIPAttention_forward
-
-        model_name = get_model_name_from_path(model_path)
-        print("[load] using pure fp16 on single GPU ...")
-        tokenizer, model, image_processor, _ = load_pretrained_model(
+        super().__init__(
             model_path=model_path,
-            model_base=None,
-            model_name=model_name,
-            device_map=None,
-            torch_dtype=torch.float16,
+            dominant=dominant,
+            contextual=contextual,
+            temperature=temperature,
+            max_new_tokens=max_new_tokens,
         )
-        print("[load] fp16 load success")
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.to(device)
-        self._device = device
-        print(f"[load] model moved to {self._device}")
+        # 2. Change: Introduce the actual Sparsifier
+        from utils.hybrid_sparsifier import HybridSparsifier, HybridSparsifierConfig
+        from utils.hybrid_llama_block_patch import install_hybrid_on_llama
 
-        from visionzip import visionzip as _visionzip
+        # 3. Configure Funnel Strategy
+        cfg = HybridSparsifierConfig(
+            # Perform a major Pruning in shallow layers, or do it in steps.
+            # Suggestion: Aggressively prune at layer 2 based on Text Query.
+            prune_layers=(2, ), 
+            
+            # Mix Text-Aware (0.7) and Info-Score (0.3)
+            alpha=0.7, 
+            
+            # How many tokens to retain?
+            # Beta controls rank-related retention rate, or you can rewrite sparsifier logic to force Top-K.
+            # Using default logic here, but ensuring at least 64 remain.
+            n_min=64, 
+            
+            # SVD rank upper limit
+            max_rank_k=64,
+        )
+        
+        sparsifier = HybridSparsifier(cfg)
+        
+        # 4. Install onto LLaMA
+        install_hybrid_on_llama(self.model, sparsifier)
+    
+    @torch.inference_mode()
+    def _attach_token_type_mask(self, input_ids: torch.Tensor, images: torch.Tensor | None):
+        """
+        Construct a [B, T'] vision/text mask based on input_ids + images before inference, 
+        and attach it to self.model._hybrid_token_type_mask so the hybrid attention wrapper can read it.
 
-        model = _visionzip(model, dominant=dominant, contextual=contextual)
+        Currently only supports:
+          - Single image (or one image per sample)
+          - mm_patch_merge_type='flat' (default config)
+        """
+        if images is None:
+            # Pure text, no mask needed
+            return
+
+        # ---- 1) Use vision tower forward directly, avoiding encode_images + mm_projector ----
+        base = self.model                      # LlavaLlamaForCausalLM
+        vt = base.get_vision_tower()           # CLIPVisionTower (patched by VisionZip / SparseZip)
+
+        # vt(images) might return:
+        #   - Tensor [B, L, C]
+        #   - or (Tensor [B, L, C], extra_info)
+        image_features = vt(images.to(self.device()))
+
+        if isinstance(image_features, tuple):
+            image_features, _extra = image_features
+
+        # Some implementations might still keep shapes like [B, H, W, C], doing a fallback flatten here
+        if image_features.dim() == 4:
+            B_img, H, W, C = image_features.shape
+            image_features = image_features.view(B_img, H * W, C)
+
+        if image_features.dim() != 3:
+            print("[HybridMask] vision tower output dim != 3, got", image_features.shape)
+            return
+
+        B_img, N_tokens, _ = image_features.shape
+        B_ids, L0 = input_ids.shape
+        if B_img != B_ids:
+            print("[HybridMask] batch size mismatch: img B={}, ids B={}".format(B_img, B_ids))
+            return
+
+        device = input_ids.device
+        masks = []
+
+        for b in range(B_ids):
+            ids = input_ids[b]  # [L0]
+            # Find position of IMAGE_TOKEN_INDEX
+            pos = (ids == self.IMAGE_TOKEN_INDEX).nonzero(as_tuple=True)[0]
+            if len(pos) == 0:
+                # This sample has no image placeholder, treat as pure text
+                Tprime = L0
+                mask = torch.zeros(Tprime, dtype=torch.bool, device=device)
+            else:
+                pos = int(pos[0].item())
+                len_pre = pos                    # text length before IMAGE_TOKEN_INDEX
+                len_post = L0 - pos - 1          # text length after IMAGE_TOKEN_INDEX
+
+                # Total length after insertion: pre_text + vision_tokens + post_text
+                Tprime = len_pre + N_tokens + len_post
+                mask = torch.zeros(Tprime, dtype=torch.bool, device=device)
+                # This middle section contains vision tokens
+                mask[len_pre:len_pre + N_tokens] = True
+
+            masks.append(mask)
+
+        # ---- 2) Pad to [B, max_len] format ----
+        max_len = max(m.size(0) for m in masks)
+        token_type_mask = torch.zeros(
+            (B_ids, max_len), dtype=torch.bool, device=device
+        )
+        for b, m in enumerate(masks):
+            Tprime = m.size(0)
+            token_type_mask[b, :Tprime] = m
+
+        # ---- 3) Attach to top-level causal LM for use by attention wrapper ----
+        self.model._hybrid_token_type_mask = token_type_mask
+        total_vision = int(token_type_mask.sum().item())
+        total_tokens = int(token_type_mask.numel())
+        # print(
+        #     f"[HybridMask] built token_type_mask (attach in generate): "
+        #     f"shape={tuple(token_type_mask.shape)}, vision_tokens={total_vision}/{total_tokens}"
+        # )
+    
+    @torch.inference_mode()
+    def generate(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Override LlavaModel.generate. Before calling the underlying LLaVA generate,
+        construct and attach the hybrid token_type_mask.
+        """
+        from scripts.timer import StageTimer
+
+        # Construct mask first (Note: passing prompt input_ids and images here)
+        self._attach_token_type_mask(
+            input_ids=inputs["input_ids"],
+            images=inputs["images"],
+        )
+
+        timer = StageTimer(use_cuda=(self.device().type == "cuda"))
+
+        timer.start("end2end")
+        timer.start("decode")  # Continue using your original coarse timing logic
+
+        out = self.model.generate(
+            inputs=inputs["input_ids"],
+            images=inputs["images"],
+            max_new_tokens=self.max_new_tokens,
+            use_cache=True,
+            return_dict_in_generate=True,
+            output_scores=False,
+        )
+
+        timer.end("decode")
+        timer.end("end2end")
+
+        out_ids = out.sequences
+        text = self.tokenizer.decode(out_ids[0], skip_special_tokens=True).strip()
 
         try:
-            from utils.clip_encoder_textaware import CLIPVisionTower_VisionZip_TextAware
-            from llava.model.multimodal_encoder.clip_encoder import CLIPVisionTower
+            in_len = inputs["input_ids"].shape[1]
+            seq_len = out_ids.shape[1]
+            gen_len = int(seq_len - in_len) if seq_len >= in_len else int(seq_len)
+        except Exception:
+            gen_len = len(self.tokenizer(text, add_special_tokens=False).input_ids)
 
-            CLIPVisionTower.forward = CLIPVisionTower_VisionZip_TextAware.forward
-
-            vision_tower = model.get_vision_tower()
-
-            setattr(vision_tower, "visionzip_dominant", int(dominant))
-            setattr(vision_tower, "visionzip_contextual", int(contextual))
-            setattr(vision_tower, "visionzip_alpha", float(alpha))
-
-            vt_name = getattr(vision_tower, "vision_tower_name", None)
-            if vt_name is None:
-                vt_cfg = getattr(vision_tower, "vision_tower_cfg", None)
-                if vt_cfg is not None and hasattr(vt_cfg, "vision_tower"):
-                    vt_name = vt_cfg.vision_tower
-
-            if vt_name is None:
-                raise ValueError("Cannot determine CLIP vision tower name to load text encoder")
-
-            self.clip_text_tokenizer = AutoTokenizer.from_pretrained(vt_name)
-            clip_model = CLIPModel.from_pretrained(
-                vt_name,
-                torch_dtype=torch.float16,
-            ).to(self._device)
-            self.clip_text_model = clip_model.text_model
-            self.clip_text_model.eval()
-
-        except Exception as e:
-            print("[Warn] Text-aware VisionZip forward patch failed:", e)
-            self.clip_text_model = None
-            self.clip_text_tokenizer = None
-
-        self.tokenizer = tokenizer
-        self.model = model
-        self.image_processor = image_processor
-        self.conv_templates = conv_templates
-        self.IMAGE_TOKEN_INDEX = IMAGE_TOKEN_INDEX
-        self.DEFAULT_IMAGE_TOKEN = DEFAULT_IMAGE_TOKEN
-        self.DEFAULT_IM_START_TOKEN = DEFAULT_IM_START_TOKEN
-        self.DEFAULT_IM_END_TOKEN = DEFAULT_IM_END_TOKEN
-        self.temperature = temperature
-        self.max_new_tokens = max_new_tokens
-        self.tokenizer_image_token = self._make_tokenizer_image_token()
-        self.model.eval()
+        timings_ms = {
+            "load_ms":       inputs.get("load_ms", 0.0),
+            "preprocess_ms": inputs.get("preprocess_ms", 0.0),
+            "prefill_ms":    0.0,
+            "decode_ms":     timer.result_ms("decode"),
+            "end2end_ms":    timer.result_ms("end2end"),
+            "num_new_tokens": int(max(gen_len, 0)),
+        }
+        return {"text": text, **timings_ms}
+        
