@@ -1,6 +1,6 @@
 # sparsezip_compressor.py
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Dict
 import math
 import torch
@@ -44,7 +44,7 @@ class ScoringAlphas:
 class LayerwiseHybridScorer(nn.Module):
     def __init__(
         self,
-        alphas: ScoringAlphas = ScoringAlphas(),
+        alphas: Optional[ScoringAlphas] = None,
         use_layer_gating: bool = True,
         num_layers: int = 1,
         cross_beta: float = 0.0,
@@ -53,7 +53,7 @@ class LayerwiseHybridScorer(nn.Module):
         eps: float = 1e-12,
     ) -> None:
         super().__init__()
-        self.alphas = alphas
+        self.alphas = alphas if alphas is not None else ScoringAlphas()
         self.use_layer_gating = use_layer_gating
         self.cross_beta = cross_beta
         self.tau_feat = tau_feat
@@ -316,25 +316,25 @@ def hierarchical_context_merge(
 @dataclass
 class CompressionConfig:
     # Overall configuration for the compression process
-    alphas: ScoringAlphas = ScoringAlphas()
+    alphas: ScoringAlphas = field(default_factory=ScoringAlphas)
     tau_feat: float = 0.2
     tau_sim: float = 0.1
     cross_beta: float = 0.0
     dynamic_k: bool = True
-    dynk: DynamicKConfig = DynamicKConfig()
+    dynk: DynamicKConfig = field(default_factory=DynamicKConfig)
     k_min: int = 4
     k_max: int = 64
-    merging: MergingConfig = MergingConfig()
+    merging: MergingConfig = field(default_factory=MergingConfig)
     skip_ctx_merge: bool = True
 
 class VisionZipCompressor(nn.Module):
     def __init__(
         self,
         num_scoring_layers: int = 1,
-        cfg: CompressionConfig = CompressionConfig(),
+        cfg: Optional[CompressionConfig] = None,
     ) -> None:
         super().__init__()
-        self.cfg = cfg
+        self.cfg = cfg if cfg is not None else CompressionConfig()
         # Initialize scorer module
         self.scorer = LayerwiseHybridScorer(
             alphas=cfg.alphas,
