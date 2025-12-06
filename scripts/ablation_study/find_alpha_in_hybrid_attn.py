@@ -29,7 +29,7 @@ def run_mme_evaluation(alpha_config: Tuple[float, float, float],
 
     out_root = (
         "eval_results/mme_eval_results/"
-        f"mme_eval_results_hybrid_attn_dif_hybrid_a{alpha1:.4f}b{alpha2:.4f}c{alpha3:.4f}"
+        f"mme_eval_results_sparsezip_a{alpha1:.4f}b{alpha2:.4f}c{alpha3:.4f}"
     )
     os.makedirs(out_root, exist_ok=True)
 

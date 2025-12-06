@@ -1,0 +1,13 @@
+model:
+  model_type: hybrid              
+  model_path: liuhaotian/llava-v1.5-7b
+  temperature: 0.0
+  max_new_tokens: 16
+  dominant: 128
+  contextual: 20
+            
+runner:
+  dataset: mme                   
+  output_dir: ./outputs_eval        
+  warmup: 3                       
+  seed: 42
