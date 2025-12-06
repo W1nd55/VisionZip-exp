@@ -1,0 +1,4 @@
+dataset: mme
+model_type: llava_vzip
+temperature: 0.2
+max_new_tokens: 128

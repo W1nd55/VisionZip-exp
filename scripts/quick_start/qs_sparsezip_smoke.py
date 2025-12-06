@@ -104,7 +104,10 @@ def clip_only_compress(cfg_path: str, image_path: str, prompt: str) -> SmokeResu
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     vision_model_id = "openai/clip-vit-large-patch14"
-    clip_model = CLIPVisionModel.from_pretrained(vision_model_id).to(device)
+    clip_model = CLIPVisionModel.from_pretrained(
+        vision_model_id,
+        attn_implementation="eager"
+    ).to(device)
     processor = CLIPImageProcessor.from_pretrained(vision_model_id)
     img = Image.open(image_path).convert("RGB")
     pixel_values = processor(images=img, return_tensors="pt")["pixel_values"].to(device)

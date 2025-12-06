@@ -33,6 +33,7 @@ model:
     
     # Feature flags (explicit)
     skip_hybrid_attn: false
+    skip_dynamic_k: false
     skip_dynamic_k: true
     skip_ctx_merge: false
 
@@ -42,4 +43,5 @@ runner:
   output_dir: ./outputs_eval
   warmup: 5
   seed: 42
+  attn_implementation: "eager"
   attn_implementation: "eager"

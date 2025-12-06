@@ -1,0 +1,2102 @@
+[
+  {
+    "question_id": "0001_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0001.png",
+    "question": "Here are the order details for my taxi ride. Should I actually pay $29.42? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here are the order details for my taxi ride. Should I actually pay $29.42? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0001",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0001",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0001_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0001.png",
+    "question": "Here are the order details for my taxi ride. Should I actually pay $32.42? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here are the order details for my taxi ride. Should I actually pay $32.42? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0001",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0001",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0002_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0002.png",
+    "question": "Should I stop when I'm about to cross the street and see the sign in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Should I stop when I'm about to cross the street and see the sign in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0002",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0002",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0002_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0002.png",
+    "question": "When I see the sign in the picture, can I cross the street? Please answer yes or no Please answer yes or no.",
+    "prompt": "When I see the sign in the picture, can I cross the street? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0002",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0002",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0003_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0003.png",
+    "question": "May I ask if in the game of finger-guessing game, did the right side of the picture win? Please answer yes or no Please answer yes or no.",
+    "prompt": "May I ask if in the game of finger-guessing game, did the right side of the picture win? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0003",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0003",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0003_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0003.png",
+    "question": "May I ask if in the game of finger-guessing game, did the left side of the picture win? Please answer yes or no Please answer yes or no.",
+    "prompt": "May I ask if in the game of finger-guessing game, did the left side of the picture win? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0003",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0003",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0004_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0004.png",
+    "question": "Does the fruit in the picture look stale? Please answer yes or no Please answer yes or no.",
+    "prompt": "Does the fruit in the picture look stale? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0004",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0004",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0004_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0004.png",
+    "question": "Does the fruit in the picture look very fresh? Please answer yes or no Please answer yes or no.",
+    "prompt": "Does the fruit in the picture look very fresh? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0004",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0004",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0005_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0005.png",
+    "question": "The office's normal closing time is 5 p.m. Now is afternoon. Should I continue to work at the time shown in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "The office's normal closing time is 5 p.m. Now is afternoon. Should I continue to work at the time shown in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0005",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0005",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0005_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0005.png",
+    "question": "The office's normal closing time is 5 p.m. Now is afternoon. Could I leave work at the time shown in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "The office's normal closing time is 5 p.m. Now is afternoon. Could I leave work at the time shown in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0005",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0005",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0006_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0006.png",
+    "question": "I recently want to go on vacation to relax and go to a place full of fresh air. Is the venue in the picture appropriate? Please answer yes or no Please answer yes or no.",
+    "prompt": "I recently want to go on vacation to relax and go to a place full of fresh air. Is the venue in the picture appropriate? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0006",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0006",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0006_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0006.png",
+    "question": "I want to go where there are a lot of people. Is the venue in the picture appropriate? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to go where there are a lot of people. Is the venue in the picture appropriate? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0006",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0006",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0007_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0007.png",
+    "question": "I want to clean the house and I want to choose a tool. Is the tool in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to clean the house and I want to choose a tool. Is the tool in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0007",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0007",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0007_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0007.png",
+    "question": "I want to transport something and I want to choose a tool to help me. Is the tool in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to transport something and I want to choose a tool to help me. Is the tool in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0007",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0007",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0008_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0008.png",
+    "question": "Can I smoke where the picture is? Please answer yes or no Please answer yes or no.",
+    "prompt": "Can I smoke where the picture is? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0008",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0008",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0008_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0008.png",
+    "question": "Is smoking prohibited in the location of the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is smoking prohibited in the location of the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0008",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0008",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0009_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0009.png",
+    "question": "Will green be obtained by mixing the above two colors? Please answer yes or no Please answer yes or no.",
+    "prompt": "Will green be obtained by mixing the above two colors? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0009",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0009",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0009_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0009.png",
+    "question": "Will red be obtained by mixing the above two colors? Please answer yes or no Please answer yes or no.",
+    "prompt": "Will red be obtained by mixing the above two colors? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0009",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0009",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0010_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0010.png",
+    "question": "I am going to exercise and I want to choose a venue. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I am going to exercise and I want to choose a venue. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0010",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0010",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0010_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0010.png",
+    "question": "I am going to study and I want to choose a venue. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I am going to study and I want to choose a venue. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0010",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0010",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0011_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0011.png",
+    "question": "If I am allergic to durian, can I finish the fruit in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "If I am allergic to durian, can I finish the fruit in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0011",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0011",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0011_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0011.png",
+    "question": "If I am allergic to banana, can I finish the fruit in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "If I am allergic to banana, can I finish the fruit in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0011",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0011",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0012_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0012.png",
+    "question": "I am going to study and I want to choose a venue. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I am going to study and I want to choose a venue. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0012",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0012",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0012_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0012.png",
+    "question": "I am going to exercise and I want to choose a venue. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I am going to exercise and I want to choose a venue. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0012",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0012",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0013_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0013.png",
+    "question": "I am going to a formal dinner party. Is the shoe in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I am going to a formal dinner party. Is the shoe in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0013",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0013",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0013_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0013.png",
+    "question": "I am going to play basketball. Is the shoe in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I am going to play basketball. Is the shoe in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0013",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0013",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0014_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0014.png",
+    "question": "In this line chart, the vertical axis is height and the horizontal axis is age. Does Maria's height exceed Jane's height in the end? Please answer yes or no Please answer yes or no.",
+    "prompt": "In this line chart, the vertical axis is height and the horizontal axis is age. Does Maria's height exceed Jane's height in the end? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0014",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0014",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0014_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0014.png",
+    "question": "In this line chart, the vertical axis is height and the horizontal axis is age. Does Jane's height exceed Kangkang's height in the end? Please answer yes or no Please answer yes or no.",
+    "prompt": "In this line chart, the vertical axis is height and the horizontal axis is age. Does Jane's height exceed Kangkang's height in the end? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0014",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0014",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0015_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0015.png",
+    "question": "Is the ball usually played with hands? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the ball usually played with hands? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0015",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0015",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0015_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0015.png",
+    "question": "Is the ball usually played with feet? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the ball usually played with feet? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0015",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0015",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0016_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0016.png",
+    "question": "Is the place in the picture a good place to enjoy the cool in a sunny day? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the place in the picture a good place to enjoy the cool in a sunny day? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0016",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0016",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0016_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0016.png",
+    "question": "Is the place in the picture a good shelter from the rain when it thunders outside? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the place in the picture a good shelter from the rain when it thunders outside? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0016",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0016",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0017_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0017.png",
+    "question": "Are the vehicles in the pictures usually environmentally friendly? Please answer yes or no Please answer yes or no.",
+    "prompt": "Are the vehicles in the pictures usually environmentally friendly? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0017",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0017",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0017_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0017.png",
+    "question": "Does the vehicle in the picture usually run faster than the car? Please answer yes or no Please answer yes or no.",
+    "prompt": "Does the vehicle in the picture usually run faster than the car? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0017",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0017",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0018_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0018.png",
+    "question": "This is a picture of some kind of animal. Does it eat leaves? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a picture of some kind of animal. Does it eat leaves? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0018",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0018",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0018_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0018.png",
+    "question": "This is a picture of some kind of animal. Does it eat meat? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a picture of some kind of animal. Does it eat meat? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0018",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0018",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0019_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0019.png",
+    "question": "Is the water flow in the picture from the top to the bottom? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the water flow in the picture from the top to the bottom? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0019",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0019",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0019_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0019.png",
+    "question": "Is the water flow in the picture from the bottom to the top? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the water flow in the picture from the bottom to the top? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0019",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0019",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0020_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0020.png",
+    "question": "Can the item in the picture be used to measure length? Please answer yes or no Please answer yes or no.",
+    "prompt": "Can the item in the picture be used to measure length? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0020",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0020",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0020_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0020.png",
+    "question": "Can the item in the picture be used to measure angles? Please answer yes or no Please answer yes or no.",
+    "prompt": "Can the item in the picture be used to measure angles? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0020",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0020",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0021_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0021.png",
+    "question": "This is a toilet guide sign. I am a man. Should I go to the toilet on the left? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a toilet guide sign. I am a man. Should I go to the toilet on the left? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0021",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0021",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0021_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0021.png",
+    "question": "This is a toilet guide sign. I am a man. Should I go to the toilet on the right? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a toilet guide sign. I am a man. Should I go to the toilet on the right? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0021",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0021",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0022_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0022.png",
+    "question": "Does the animal in the picture usually catch mice? Please answer yes or no Please answer yes or no.",
+    "prompt": "Does the animal in the picture usually catch mice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0022",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0022",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0022_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0022.png",
+    "question": "Is the animal in the picture usually used in search and rescue? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the animal in the picture usually used in search and rescue? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0022",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0022",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0023_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0023.png",
+    "question": "If you want to keep your fruit fresh in summer, should you put it in the appliance in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "If you want to keep your fruit fresh in summer, should you put it in the appliance in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0023",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0023",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0023_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0023.png",
+    "question": "Is the appliance in the picture more suitable for winter than summer? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the appliance in the picture more suitable for winter than summer? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0023",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0023",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0024_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0024.png",
+    "question": "I want to go skating. Is the shoe in the picture usually appropriate? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to go skating. Is the shoe in the picture usually appropriate? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0024",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0024",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0024_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0024.png",
+    "question": "I want to go roller skating. Is the shoe in the picture usually appropriate? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to go roller skating. Is the shoe in the picture usually appropriate? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0024",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0024",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0025_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0025.png",
+    "question": "I feel very thirsty in the desert now. Can the thing in the picture help me? Please answer yes or no Please answer yes or no.",
+    "prompt": "I feel very thirsty in the desert now. Can the thing in the picture help me? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0025",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0025",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0025_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0025.png",
+    "question": "I don't like clear cups. Is the cup in the picture my type? Please answer yes or no Please answer yes or no.",
+    "prompt": "I don't like clear cups. Is the cup in the picture my type? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0025",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0025",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0026_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0026.png",
+    "question": "I want to go for a run and I want to choose a pair of shoes. Is the shoe in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to go for a run and I want to choose a pair of shoes. Is the shoe in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0026",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0026",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0026_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0026.png",
+    "question": "I want to practice ballet and I want to choose a pair of shoes. Is the shoe in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to practice ballet and I want to choose a pair of shoes. Is the shoe in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0026",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0026",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0027_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0027.png",
+    "question": "Are the pants in the picture usually suitable for casual wear? Please answer yes or no Please answer yes or no.",
+    "prompt": "Are the pants in the picture usually suitable for casual wear? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0027",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0027",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0027_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0027.png",
+    "question": "Are the pants in the picture usually suitable for playing basketball? Please answer yes or no Please answer yes or no.",
+    "prompt": "Are the pants in the picture usually suitable for playing basketball? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0027",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0027",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0028_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0028.png",
+    "question": "This is a picture from a real scene. Is there only one real cat in this picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a picture from a real scene. Is there only one real cat in this picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0028",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0028",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0028_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0028.png",
+    "question": "This is a picture from a real scene. Is there only two real cats in this picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a picture from a real scene. Is there only two real cats in this picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0028",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0028",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0029_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0029.png",
+    "question": "The three cats in the picture, the one without a beard, is the middle one? Please answer yes or no Please answer yes or no.",
+    "prompt": "The three cats in the picture, the one without a beard, is the middle one? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0029",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0029",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0029_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0029.png",
+    "question": "The three cats in the picture, the one without a beard, is the right one? Please answer yes or no Please answer yes or no.",
+    "prompt": "The three cats in the picture, the one without a beard, is the right one? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0029",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0029",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0030_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0030.png",
+    "question": "I'm going to 501. Do I need to turn left at the intersection? Please answer yes or no Please answer yes or no.",
+    "prompt": "I'm going to 501. Do I need to turn left at the intersection? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0030",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0030",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0030_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0030.png",
+    "question": "I'm going to 502. Do I need to turn left at the intersection? Please answer yes or no Please answer yes or no.",
+    "prompt": "I'm going to 502. Do I need to turn left at the intersection? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0030",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0030",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0031_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0031.png",
+    "question": "Is the drink in the picture usually suitable for a party? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the drink in the picture usually suitable for a party? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0031",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0031",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0031_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0031.png",
+    "question": "Is the drink in the picture usually suitable for drinking together with cephalosporin? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the drink in the picture usually suitable for drinking together with cephalosporin? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0031",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0031",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0032_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0032.png",
+    "question": "Here is a picture of the cake I cut. Did I cut it at least twice? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here is a picture of the cake I cut. Did I cut it at least twice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0032",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0032",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0032_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0032.png",
+    "question": "Here is a picture of the cake I cut. Did I cut it at least once? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here is a picture of the cake I cut. Did I cut it at least once? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0032",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0032",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0033_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0033.png",
+    "question": "This is a picture from a real scene. Is there only one real apple in this picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a picture from a real scene. Is there only one real apple in this picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0033",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0033",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0033_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0033.png",
+    "question": "This is a picture from a real scene. Is there only two real apples in this picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a picture from a real scene. Is there only two real apples in this picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0033",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0033",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0034_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0034.png",
+    "question": "Here is a pie chart counting the favorite fruits of all employees in our company. Is the durian the most popular fruit? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here is a pie chart counting the favorite fruits of all employees in our company. Is the durian the most popular fruit? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0034",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0034",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0034_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0034.png",
+    "question": "Here is a pie chart counting the favorite fruits of all employees in our company. Is the mango the most popular fruit? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here is a pie chart counting the favorite fruits of all employees in our company. Is the mango the most popular fruit? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0034",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0034",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0035_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0035.png",
+    "question": "This is the sales chart of this month. Is Tina the runner-up in sales this month? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is the sales chart of this month. Is Tina the runner-up in sales this month? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0035",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0035",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0035_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0035.png",
+    "question": "This is the sales chart of this month. Is John the runner-up in sales this month? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is the sales chart of this month. Is John the runner-up in sales this month? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0035",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0035",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0036_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0036.png",
+    "question": "Is it a good time to walk through the road in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it a good time to walk through the road in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0036",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0036",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0036_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0036.png",
+    "question": "Is it a good time to drive a car through the road in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it a good time to drive a car through the road in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0036",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0036",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0037_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0037.png",
+    "question": "Here is a photo of the sun's position at a certain time. Could it be dusk now? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here is a photo of the sun's position at a certain time. Could it be dusk now? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0037",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0037",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0037_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0037.png",
+    "question": "Here is a photo of the sun's position at a certain time. Could it be noon now? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here is a photo of the sun's position at a certain time. Could it be noon now? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0037",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0037",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0038_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0038.png",
+    "question": "All apples are shown in the picture. If I eat an apple every day, can I eat it for four days? Please answer yes or no Please answer yes or no.",
+    "prompt": "All apples are shown in the picture. If I eat an apple every day, can I eat it for four days? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0038",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0038",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0038_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0038.png",
+    "question": "All apples are shown in the picture. If I eat an apple every day, can I eat it for three days? Please answer yes or no Please answer yes or no.",
+    "prompt": "All apples are shown in the picture. If I eat an apple every day, can I eat it for three days? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0038",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0038",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0039_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0039.png",
+    "question": "This line chart is used to count the sales of two types of burgers. Are chicken burgers more popular? Please answer yes or no Please answer yes or no.",
+    "prompt": "This line chart is used to count the sales of two types of burgers. Are chicken burgers more popular? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0039",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0039",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0039_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0039.png",
+    "question": "This line chart is used to count the sales of two types of burgers. Are beef burgers more popular? Please answer yes or no Please answer yes or no.",
+    "prompt": "This line chart is used to count the sales of two types of burgers. Are beef burgers more popular? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0039",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0039",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0040_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0040.png",
+    "question": "I want to supplement protein. Is it appropriate to eat the food in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to supplement protein. Is it appropriate to eat the food in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0040",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0040",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0040_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0040.png",
+    "question": "I don't like to eat any food related to chicken. Is the food in the picture my type? Please answer yes or no Please answer yes or no.",
+    "prompt": "I don't like to eat any food related to chicken. Is the food in the picture my type? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0040",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0040",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0041_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0041.png",
+    "question": "Is the fruit in the picture usually sweet? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the fruit in the picture usually sweet? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0041",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0041",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0041_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0041.png",
+    "question": "Is the fruit in the picture usually spicy? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the fruit in the picture usually spicy? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0041",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0041",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0042_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0042.png",
+    "question": "Are there usually cars in the area shown in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Are there usually cars in the area shown in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0042",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0042",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0042_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0042.png",
+    "question": "Is it appropriate to cross the road directly from the place shown in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to cross the road directly from the place shown in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0042",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0042",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0043_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0043.png",
+    "question": "Is the animal in the picture usually not seen in winter? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the animal in the picture usually not seen in winter? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0043",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0043",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0043_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0043.png",
+    "question": "Is the animal in the picture usually seen in winter? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the animal in the picture usually seen in winter? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0043",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0043",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0044_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0044.png",
+    "question": "This is a flowchart of a program. I enter 3 and 6. Is the output 'No'? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a flowchart of a program. I enter 3 and 6. Is the output 'No'? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0044",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0044",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0044_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0044.png",
+    "question": "This is a flowchart of a program. I enter 3 and 6. Is the output 'Yes'? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a flowchart of a program. I enter 3 and 6. Is the output 'Yes'? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0044",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0044",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0045_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0045.png",
+    "question": "There is a sign at the intersection, can I turn left? Please answer yes or no Please answer yes or no.",
+    "prompt": "There is a sign at the intersection, can I turn left? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0045",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0045",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0045_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0045.png",
+    "question": "There is a sign at the intersection, can I turn right? Please answer yes or no Please answer yes or no.",
+    "prompt": "There is a sign at the intersection, can I turn right? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0045",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0045",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0046_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0046.png",
+    "question": "Vitamin C is very helpful for human health. Does the food on in the picture usually contain Vitamin C? Please answer yes or no Please answer yes or no.",
+    "prompt": "Vitamin C is very helpful for human health. Does the food on in the picture usually contain Vitamin C? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0046",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0046",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0046_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0046.png",
+    "question": "Is the food in the picture commonly used to build muscle? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the food in the picture commonly used to build muscle? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0046",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0046",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0047_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0047.png",
+    "question": "All apples are shown in the picture. My brother and I divide the apples equally. May I have one apple? Please answer yes or no Please answer yes or no.",
+    "prompt": "All apples are shown in the picture. My brother and I divide the apples equally. May I have one apple? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0047",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0047",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0047_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0047.png",
+    "question": "All apples are shown in the picture. My brother and I divide the apples equally. May I have two apples? Please answer yes or no Please answer yes or no.",
+    "prompt": "All apples are shown in the picture. My brother and I divide the apples equally. May I have two apples? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0047",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0047",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0048_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0048.png",
+    "question": "Here is a picture of eating fruit. Am I eating a strawberry? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here is a picture of eating fruit. Am I eating a strawberry? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0048",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0048",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0048_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0048.png",
+    "question": "Here is a picture of eating fruit. Am I eating a cherry tomato? Please answer yes or no Please answer yes or no.",
+    "prompt": "Here is a picture of eating fruit. Am I eating a cherry tomato? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0048",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0048",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0049_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0049.png",
+    "question": "Does the vehicle in the picture usually have its Windows closed during fast driving? Please answer yes or no Please answer yes or no.",
+    "prompt": "Does the vehicle in the picture usually have its Windows closed during fast driving? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0049",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0049",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0049_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0049.png",
+    "question": "Does the vehicle in the picture usually have its Windows opened during fast driving? Please answer yes or no Please answer yes or no.",
+    "prompt": "Does the vehicle in the picture usually have its Windows opened during fast driving? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0049",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0049",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0050_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0050.png",
+    "question": "Do people commonly use the item in the picture for makeup in their daily lives? Please answer yes or no Please answer yes or no.",
+    "prompt": "Do people commonly use the item in the picture for makeup in their daily lives? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0050",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0050",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0050_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0050.png",
+    "question": "Do people commonly use the item in the picture to write in their daily lives? Please answer yes or no Please answer yes or no.",
+    "prompt": "Do people commonly use the item in the picture to write in their daily lives? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0050",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0050",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0051_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0051.png",
+    "question": "This is a flowchart of a program. When the input is 5, is the output 6? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a flowchart of a program. When the input is 5, is the output 6? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0051",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0051",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0051_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0051.png",
+    "question": "This is a flowchart of a program. When the input is 6, is the output 5? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is a flowchart of a program. When the input is 6, is the output 5? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0051",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0051",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0052_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0052.png",
+    "question": "I want to lose weight. Is the food in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to lose weight. Is the food in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0052",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0052",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0052_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0052.png",
+    "question": "I want to gain weight. Is the food in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to gain weight. Is the food in the picture an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0052",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0052",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0053_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0053.png",
+    "question": "Is the car in the picture going to make a right turn after going through a straight road section? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the car in the picture going to make a right turn after going through a straight road section? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0053",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0053",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0053_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0053.png",
+    "question": "Is the car in the picture going to make a left turn after going through a straight road section? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the car in the picture going to make a left turn after going through a straight road section? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0053",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0053",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0054_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0054.png",
+    "question": "May I ask if the plants in the picture can survive in the water? Please answer yes or no Please answer yes or no.",
+    "prompt": "May I ask if the plants in the picture can survive in the water? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0054",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0054",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0054_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0054.png",
+    "question": "May I ask if the plants in the picture can survive in the soil? Please answer yes or no Please answer yes or no.",
+    "prompt": "May I ask if the plants in the picture can survive in the soil? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0054",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0054",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0055_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0055.png",
+    "question": "The man in the picture is eating. Does he eat noodles? Please answer yes or no Please answer yes or no.",
+    "prompt": "The man in the picture is eating. Does he eat noodles? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0055",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0055",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0055_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0055.png",
+    "question": "The man in the picture is eating. Does he eat rice? Please answer yes or no Please answer yes or no.",
+    "prompt": "The man in the picture is eating. Does he eat rice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0055",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0055",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0056_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0056.png",
+    "question": "Can the item in the picture output water? Please answer yes or no Please answer yes or no.",
+    "prompt": "Can the item in the picture output water? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0056",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0056",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0056_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0056.png",
+    "question": "Can the item in picture be used for blowing air? Please answer yes or no Please answer yes or no.",
+    "prompt": "Can the item in picture be used for blowing air? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0056",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0056",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0057_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0057.png",
+    "question": "Does the vehicle in the picture usually run faster than a horse? Please answer yes or no Please answer yes or no.",
+    "prompt": "Does the vehicle in the picture usually run faster than a horse? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0057",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0057",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0057_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0057.png",
+    "question": "Does the vehicle in the picture usually fly? Please answer yes or no Please answer yes or no.",
+    "prompt": "Does the vehicle in the picture usually fly? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0057",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0057",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0058_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0058.png",
+    "question": "Can't I smoke here? Please answer yes or no Please answer yes or no.",
+    "prompt": "Can't I smoke here? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0058",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0058",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0058_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0058.png",
+    "question": "May I smoke here? Please answer yes or no Please answer yes or no.",
+    "prompt": "May I smoke here? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0058",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0058",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0059_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0059.png",
+    "question": "This pie chart is the age distribution of our company. Is the proportion of people aged 30-50 more than 40%? Please answer yes or no Please answer yes or no.",
+    "prompt": "This pie chart is the age distribution of our company. Is the proportion of people aged 30-50 more than 40%? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0059",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0059",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0059_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0059.png",
+    "question": "This pie chart is the age distribution of our company. Is the proportion of people aged 40-50 more than 30%? Please answer yes or no Please answer yes or no.",
+    "prompt": "This pie chart is the age distribution of our company. Is the proportion of people aged 40-50 more than 30%? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0059",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0059",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0060_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0060.png",
+    "question": "This is the histogram of fruit sales today. Do more men buy watermelons than women buy bananas? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is the histogram of fruit sales today. Do more men buy watermelons than women buy bananas? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0060",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0060",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0060_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0060.png",
+    "question": "This is the histogram of fruit sales today. Do more men buy peach than women buy apple? Please answer yes or no Please answer yes or no.",
+    "prompt": "This is the histogram of fruit sales today. Do more men buy peach than women buy apple? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0060",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0060",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0061_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0061.png",
+    "question": "Is the tool in the picture common in tall buildings? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the tool in the picture common in tall buildings? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0061",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0061",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0061_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0061.png",
+    "question": "In case of fire, is it appropriate to choose the tool in the picture to go downstairs? Please answer yes or no Please answer yes or no.",
+    "prompt": "In case of fire, is it appropriate to choose the tool in the picture to go downstairs? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0061",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0061",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0062_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0062.png",
+    "question": "It's snowing outside the window now. I want to go out. Is it appropriate to wear the cloth in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "It's snowing outside the window now. I want to go out. Is it appropriate to wear the cloth in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0062",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0062",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0062_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0062.png",
+    "question": "It's very hot outside. I want to go out. Is it appropriate to wear the cloth in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "It's very hot outside. I want to go out. Is it appropriate to wear the cloth in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0062",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0062",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0063_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0063.png",
+    "question": "Is the animal in the picture suitable as a pet? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the animal in the picture suitable as a pet? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0063",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0063",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0063_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0063.png",
+    "question": "Is the animal in the pictures usually stronger than adult tigers? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the animal in the pictures usually stronger than adult tigers? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0063",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0063",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0064_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0064.png",
+    "question": "I want to play basketball. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to play basketball. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0064",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0064",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0064_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0064.png",
+    "question": "I want to play football. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to play football. Is the venue in the picture a good choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0064",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0064",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0065_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0065.png",
+    "question": "Is it appropriate to wear a down jacket during the season in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to wear a down jacket during the season in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0065",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0065",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0065_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0065.png",
+    "question": "Is it appropriate to only wear short sleeves during the season in the picture? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it appropriate to only wear short sleeves during the season in the picture? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0065",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0065",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0066_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0066.png",
+    "question": "I want to carry one thing with me on a rainy day. Is the thing in the image an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to carry one thing with me on a rainy day. Is the thing in the image an appropriate choice? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0066",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0066",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0066_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0066.png",
+    "question": "It is raining outside. I am in a house and I don't need to go out. Is this thing in the picture necessary for me to use? Please answer yes or no Please answer yes or no.",
+    "prompt": "It is raining outside. I am in a house and I don't need to go out. Is this thing in the picture necessary for me to use? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0066",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0066",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0067_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0067.png",
+    "question": "I feel very hot. Is the tool in the picture suitable for use? Please answer yes or no Please answer yes or no.",
+    "prompt": "I feel very hot. Is the tool in the picture suitable for use? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0067",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0067",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0067_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0067.png",
+    "question": "I feel very cold. Is the tool in the picture suitable for use? Please answer yes or no Please answer yes or no.",
+    "prompt": "I feel very cold. Is the tool in the picture suitable for use? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0067",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0067",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0068_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0068.png",
+    "question": "Is it unhealthy to eat the food in the picture too often? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is it unhealthy to eat the food in the picture too often? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0068",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0068",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0068_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0068.png",
+    "question": "Is the food in the picture usually low in calories? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the food in the picture usually low in calories? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0068",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0068",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0069_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0069.png",
+    "question": "Is the phone in the photo connected to a charger? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the phone in the photo connected to a charger? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0069",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0069",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0069_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0069.png",
+    "question": "Is the phone in the photo charging? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the phone in the photo charging? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0069",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0069",
+      "pair": "neg"
+    }
+  },
+  {
+    "question_id": "0070_commonsense_reasoning_pos",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0070.png",
+    "question": "I want to turn the screw. Is the tool in the picture usually appropriate? Please answer yes or no Please answer yes or no.",
+    "prompt": "I want to turn the screw. Is the tool in the picture usually appropriate? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "yes"
+    ],
+    "image_id": "0070",
+    "pair": "pos",
+    "meta": {
+      "image_id": "0070",
+      "pair": "pos"
+    }
+  },
+  {
+    "question_id": "0070_commonsense_reasoning_neg",
+    "image_path": "/home/w1nd519994824/project/mittalshivam003/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark/commonsense_reasoning/0070.png",
+    "question": "Is the tool in the picture usually suitable for smashing walnuts? Please answer yes or no Please answer yes or no.",
+    "prompt": "Is the tool in the picture usually suitable for smashing walnuts? Please answer yes or no Please answer yes or no.",
+    "answers": [
+      "no"
+    ],
+    "image_id": "0070",
+    "pair": "neg",
+    "meta": {
+      "image_id": "0070",
+      "pair": "neg"
+    }
+  }
+]

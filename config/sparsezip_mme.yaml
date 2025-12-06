@@ -11,6 +11,10 @@ model:
 
   sparsezip:
     dynamic_k: true
+    k_min: 32            # INCREASED from 20 (Aggressive accuracy boost)
+    k_max: 64            # INCREASED from 48 (Allow more dominant tokens)
+    dynk:
+      c: 12.0            # INCREASED from 10.0 (Shift K distribution higher)
     k_min: 32            # INCREASED from 20
     k_max: 64            # INCREASED from 48
     dynk:
@@ -19,6 +23,17 @@ model:
 
     alphas:
       attn: 1.0
+      entropy: 0.8       # INCREASED from 0.6 (Stronger entropy signal)
+      mutual: 1.0        # INCREASED from 0.8 (Stronger MI signal)
+    tau_feat: 0.15
+    tau_sim: 0.08
+
+    # Cross-attention fusion weight (ENABLED for text-aware compression)
+    cross_beta: 0.3
+
+    # Contextual merging strategy
+    merging:
+      contextual_num: 32 # INCREASED from 20 (Keep significantly more context)
       entropy: 0.8       # INCREASED from 0.6
       mutual: 1.0        # INCREASED from 0.8
     tau_feat: 0.15
@@ -31,6 +46,9 @@ model:
       kmeans_iters: 1
       agglomerative: false
     
+    skip_hybrid_attn: false
+    skip_dynamic_k:   false
+    skip_ctx_merge:   false   
     # Feature flags (explicit)
     skip_hybrid_attn: false
     skip_dynamic_k: true

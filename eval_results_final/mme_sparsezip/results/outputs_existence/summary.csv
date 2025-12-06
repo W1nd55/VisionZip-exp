@@ -1,0 +1,17 @@
+mme_acc,0.8333333333333334
+mme_count_q,60
+mme_acc_plus,0.6666666666666666
+mme_count_pair,30
+end2end_ms_p50,209.09909057617188
+end2end_ms_p95,210.7685417175293
+end2end_ms_avg,209.20976969401042
+load_ms_p50,1.807064501917921
+load_ms_p95,2.272497595913592
+load_ms_avg,1.744098867008385
+num_new_tokens_ms_p50,3.0
+num_new_tokens_ms_p95,3.0
+num_new_tokens_ms_avg,3.0
+preprocess_ms_p50,13.335773499420611
+preprocess_ms_p95,13.737469497937127
+preprocess_ms_avg,13.05584001687142
+e2e_avg(ms),209.20976969401042
