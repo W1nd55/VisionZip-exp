@@ -1,5 +1,4 @@
-# SparseZip configuration for MME
-# Note: model_type remains 'llava_vzip' — SparseZip is the compressor used under the hood.
+# SparseZip configuration for POPE
 
 model:
   model_type: sparsezip
@@ -7,48 +6,40 @@ model:
   temperature: 0.0
   max_new_tokens: 16
 
-  # Dominant tokens default (SparseZip uses dynamic-K internally; this is a safe numeric default)
-  dominant: 54
-  # Contextual tokens target (can be overridden by sparsezip.merging.contextual_num)
-  contextual: 16
+  dominant: 54  # dynamic-K can override internally
+  contextual: 12  # Optimized: slightly lower for better latency
 
-  # SparseZip compressor options (will be used when wiring is enabled)
   sparsezip:
-    # Dynamic-K selection: K = round(log(var(scores)+eps) + c)
     dynamic_k: true
-    k_min: 8
-    k_max: 64
+    k_min: 32            # INCREASED from 20
+    k_max: 64            # INCREASED from 48
     dynk:
-      c: 8.0
-      eps: 1.0e-6
+      c: 12.0            # INCREASED from 10.0
+      eps: 1.0e-3
 
-    # Hybrid scoring weights and temps
     alphas:
       attn: 1.0
-      entropy: 0
-      mutual: 0
-    tau_feat: 0.2
-    tau_sim: 0.1
+      entropy: 0.8       # INCREASED from 0.6
+      mutual: 1.0        # INCREASED from 0.8
+    tau_feat: 0.15
+    tau_sim: 0.08
+    cross_beta: 0.1  # ENABLED for text-aware compression
 
-    # Cross-attention fusion weight (0.0 = off; requires extra wiring in LLM)
-    cross_beta: 0.0
-
-    # Contextual merging strategy
     merging:
-      contextual_num: 16
+      contextual_num: 32 # INCREASED from 20
       kmeans_init_factor: 2.0
-      kmeans_iters: 10
-      agglomerative: true
+      kmeans_iters: 1
+      agglomerative: false
     
-    skip_hybrid_attn: true
-    skip_dynamic_k:   false
-    skip_ctx_merge:   true   
+    # Feature flags (explicit)
+    skip_hybrid_attn: false
+    skip_dynamic_k: true
+    skip_ctx_merge: false
 
 runner:
   dataset: mme
-  # Required at runtime (or pass via --ann_path): path to JSON annotations
   ann_path: null
   output_dir: ./outputs_eval
-  warmup: 3
+  warmup: 5
   seed: 42
-  limit: null
+  attn_implementation: "eager"

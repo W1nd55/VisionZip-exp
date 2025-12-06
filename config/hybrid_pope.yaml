@@ -1,5 +1,5 @@
 model:
-  model_type: llava_vzip
+  model_type: hybrid
   model_path: liuhaotian/llava-v1.5-7b
   temperature: 0.0
   max_new_tokens: 16
@@ -8,6 +8,6 @@ model:
 
 runner:
   dataset: pope
-  output_dir: ./eval_outputs/
-  warmup: 5
+  output_dir: ./outputs_eval
+  warmup: 3
   seed: 42
