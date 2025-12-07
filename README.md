@@ -255,7 +255,7 @@ If you use SparseZip in your research, please cite:
 
 ## License
 
-[Add your license information here]
+Need to check with Ben, Alex and Shivam
 
 ## Acknowledgments
 
