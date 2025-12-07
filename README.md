@@ -16,8 +16,8 @@ SparseZip is a training-free, plug-and-play vision token compression method for 
 
 - **Hybrid Scoring**: Combines global attention patterns, local entropy signals, and text-conditioned mutual-information cues into a single token-importance measure, enabling finer discrimination of salient versus redundant regions without relying solely on vision-side attention.
 - **Dynamic-K Budgeting**: Adapts token retention per image based on information complexity (K = log(Var(scores)) + c) rather than a fixed quota, allowing complex images to preserve more tokens and simple images to preserve fewer.
-- **Hierarchical Merging**: Uses k-means++ and agglomerative clustering to merge non-dominant tokens into contextual representations
-- **Training-Free**: No gradients or fine-tuning required, works with pre-trained models
+- **Hierarchical Merging**: Compresses non-dominant visual tokens through a k-means++ initialization followed by agglomerative clustering, preserving CLIP’s manifold structure while consolidating redundant regions into contextually consistent representations. 
+- **Training-Free**: Avoids gradient updates or fine-tuning entirely, functioning as a plug-and-play module on top of existing pretrained multimodal models. 
 
 ## Quick Start
 
