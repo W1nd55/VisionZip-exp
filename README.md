@@ -83,14 +83,14 @@ SparseZip reduces visual token count through three main steps:
    - Low-complexity images → lower K
    - Formula: `K = round(log(Var(scores) + eps) + c)`, bounded by k_min/k_max
 
-3. **Contextual Merging**: Non-dominant tokens are merged into fewer contextual tokens using:
+3. **Contextual Merging**: Non-dominant tokens are merged into fewer contxtual tokens using:
    - k-means++ initialization
    - Optional agglomerative hierarchical clustering
    - Attention-weighted aggregation
 
 ## Configuration
 
-SparseZip is configured via YAML files. Example configuration:
+SparseZip is configured via YAML files. Example config:
 
 ```yaml
 model:
@@ -179,12 +179,12 @@ python tools/mme_run_all.py \
   --mme_root ./datasets/mme/MME_Benchmark_release_version/MME_Benchmark \
   --out_root ./eval_results/mme_eval \
   --cfg config/sparsezip_mme.yaml \
-  --only OCR  # Optional: limit to specific subtasks
+  --only OCR  
 ```
 
 ### POPE Dataset
 
-POPE annotations are typically generated from COCO val2014. See `tools/pope_run_all.py` for setup details.
+POPE annotations are typically generteed from COCO val2014. See `tools/pope_run_all.py` for setup details.
 
 ## Performance Comparison
 
@@ -200,7 +200,7 @@ POPE annotations are typically generated from COCO val2014. See `tools/pope_run_
 
 **Key Findings:**
 
-- **POPE**: SparseZip achieves 83.7% accuracy with only 2% drop from Llava baseline (85.7%), while reducing latency by 19.2% (479.987ms vs 594.238ms). SparseZip outperforms VisionZip (79.8%) and is competitive with SparseVLM (84.9%).
+- **POPE**: SparseZip achieves 83.7% accuracy with only 2% drop from Llava baseline (85.7%), while reducing latency by 19.2% (479.987ms vs 594.238ms). SparseZip outperforms VisionZip (79.8%) and is comptitive with SparseVLM (84.9%).
 
 - **MME**: SparseZip achieves 36.2% latency reduction (199.748ms vs 313.143ms) while maintaining 72.2% accuracy (vs 74.3% baseline).
 
@@ -210,7 +210,7 @@ POPE annotations are typically generated from COCO val2014. See `tools/pope_run_
 
 ## Ablation Components
 
-SparseZip includes several components that can be enabled/disabled:
+SparseZip includes several components that can be enabled/disable:
 
 - **Hybrid Attention**: Multi-signal scoring (attention + entropy + mutual information)
 - **Text-Aware Cross-Attention**: Text-conditioned token selection (via MM projector transpose)
@@ -231,7 +231,7 @@ For detailed implementation information, see:
 - Python 3.10+
 - PyTorch 2.1.2+
 - Transformers library
-- CUDA-capable GPU (recommended) or CPU with sufficient RAM
+- CUDA-capbale GPU (recommended) or CPU with sufficient RAM
 - ~14 GB VRAM for LLaVA-1.5-7B in float16
 
 ## Troubleshooting
@@ -243,19 +243,11 @@ For detailed implementation information, see:
 
 ## Citation
 
-If you use SparseZip in your research, please cite:
-
-```bibtex
-@article{sparsezip2024,
-  title={SparseZip: Text-Aware Visual Token Selection and Compression for Efficient Vision-Language Model Inference},
-  author={...},
-  year={2024}
-}
-```
+Need to check with Ben, Alex and Shivam
 
 ## License
 
-Need to check with Ben, Alex and Shivam
+This as well, needs to be checked with Ben, Alex and Shivam
 
 ## Acknowledgments
 
