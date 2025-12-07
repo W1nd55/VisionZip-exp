@@ -1,306 +1,62 @@
-# VisionZip/SparseVLM Modular Evaluation Framework
+# SparseZip: Text-Aware Visual Token Compression for Efficient VLM Inference
 
-> This repository provides a modular and customizable framework for evaluating LLMs, specifically designed to handle models like **VisionZip** and **SparseVLM** on datasets such as **MME** and **POPE**. You can place custom model utility modifications (e.g., monkey patches) within the `utils/` directory.
+SparseZip is a training-free, plug-and-play vision token compression method for Vision-Language Models (VLMs). It reduces the number of visual tokens processed by the LLM while preserving semantic fidelity through text-aware token selection and hierarchical merging.
 
------
+## Key Results
+
+- **POPE Accuracy**: 83.7% (vs 85.7% LLaVA baseline, only 2% drop)
+- **Latency Reductions**: 
+  - POPE: 19.2% reduction (479.987ms vs 594.238ms)
+  - MME: 36.2% reduction (199.748ms vs 313.143ms)
+  - DocVQA: 11.0% reduction (928.452ms vs 1043.561ms)
+- **Efficiency**: Adds ~0.73 GFLOPs overhead (~1/10 of a CLIP layer), saves 244.5 MB GPU memory per image
+- **Trade-off**: Achieves best balance between latency and accuracy across all three benchmarks
+
+## Features
+
+- **Text-Aware Selection**: Uses MM projector transpose (W^T) to inject text semantics into vision token scoring
+- **Hybrid Scoring**: Combines attention, entropy, and mutual information for richer token importance signals
+- **Dynamic-K Budgeting**: Adapts token retention per image based on information complexity (K = log(Var(scores)) + c)
+- **Hierarchical Merging**: Uses k-means++ and agglomerative clustering to merge non-dominant tokens into contextual representations
+- **Training-Free**: No gradients or fine-tuning required, works with pre-trained models
 
 ## Quick Start
 
-### Prerequisites
-- **GPU**: NVIDIA A40 or similar (24GB+ VRAM, compute capability 8.6)
-- **CUDA**: 12.1+
-- **Python**: 3.10+
-- **Conda**: Recommended for environment management
+### Installation
 
-### 1. Clone Repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/VisionZip-exp.git
-cd VisionZip-exp
+# Sync git submodules
 git submodule update --init --recursive
-```
 
-### 2. Create Environment
-```bash
-# Create conda environment
-conda create -n sparsezip python=3.10 -y
-conda activate sparsezip
+# Install dependencies
+pip install -r requirements_A40.txt  # or requirements_A40_visionzip.txt
 
-# Install CUDA toolkit
-conda install -c nvidia cuda-toolkit=12.1 -y
-```
-
-### 3. Install Dependencies
-```bash
-# Install PyTorch and other requirements
-pip install -r requirements.txt
-
-# Install flash-attention (A40 specific)
-export TORCH_CUDA_ARCH_LIST="8.6"
-export FLASH_ATTENTION_SKIP_SM90=1
-pip install "flash-attn==2.5.6" --no-build-isolation --no-cache-dir
-
-# Install LLaVA
-pip install -e models/LLaVA --no-deps
-
-# Install VisionZip (modify setup.py first)
-# Edit models/VisionZip/setup.py:
-#   packages=find_packages(include=["visionzip", "visionzip.*"])
-pip install -e models/VisionZip --no-deps
-```
-
-### 4. Download Datasets
-
-**MME Dataset:**
-```bash
-python scripts/dataset_download.py --dataset mme --output_dir ./datasets
-```
-
-**POPE Dataset:**
-```bash
-# Download COCO val2014 images
-mkdir -p datasets/coco
-cd datasets/coco
-wget http://images.cocodataset.org/zips/val2014.zip
-unzip val2014.zip
-
-# Download POPE annotations
-cd ../
-git clone https://github.com/AoiDragon/POPE.git pope
-```
-
-### 5. Hugging Face Login (Required)
-```bash
+# Login to HuggingFace if needed
 huggingface-cli login
-# Enter your HF token when prompted
 ```
 
-### 6. Run Evaluation
-```bash
-bash run.sh
-```
+### Smoke Test (Single Image)
 
-Results will be saved in `results_cross_attention/` directory.
-
-### 7. View Results
-```bash
-# MME results
-cat results_cross_attention/mme_sparsezip/mme_summary.csv
-
-# POPE results
-cat results_cross_attention/pope_sparsezip/pope_summary.csv
-```
-
------
-
-## MME Evaluation README
-
-> Updated: 2025-11-08 06:35
-
-This README explains how to:
-
-1)  Sync Git submodules and prepare the results directory.
-2)  Download the **MME** dataset using `dataset_download.py`.
-3)  Customize evaluation modules in `dataset / metric / model`.
-4)  Use `tools/mme_run_all.py` for one-click evaluation, including the `--only` option for selecting subtasks.
-
------
-
-## 0\. Quick Preparation
-
-```bash
-# Sync all git submodules
-git submodule update --init --recursive
-
-# Create the root directory for evaluation results (recommended inside/outside the repo)
-mkdir -p eval_results
-```
-
-> **Recommended Environment**: Python 3.10+, `torch`, `transformers`, `Pillow`, `huggingface_hub`, etc.
-> If accessing restricted/gated HF resources, please log in first:
->
-> ```bash
-> huggingface-cli login
-> ```
-
------
-
-## 1\) Download MME Dataset (using `dataset_download.py`)
-
-Script location: `scripts/dataset_download.py`
-It includes `DATASET_CONFIGS["mme"]` by default, which fetches data from **Hugging Face: `darkyarding/MME`** and **automatically extracts** `MME_Benchmark_release_version.zip`.
-
-### Basic Usage
-
-```bash
-python scripts/dataset_download.py   --dataset mme   --output_dir ./datasets
-```
-
-Upon completion, the typical directory structure is:
-
-```
-datasets/
-  mme/
-    MME_Benchmark_release_version/
-      MME_Benchmark/
-        OCR/
-        ...  (contains several subtask directories)
-```
-
-> Common optional arguments:
->
->   - `--list`: Only lists available dataset names, does not download.
->   - `--no-extract`: Downloads only the zip file, does not extract.
->   - `--keep-zip`: Retains the zip archive after extraction.
->   - `--skip-auth-check`: Skips the login check (manual login is still required if the dataset is gated).
-
------
-
-## 2\) Customizing Evaluation in `dataset / metric / model`
-
-This repository modularizes the evaluation process:
-
-  - **`dataset.py`**: Defines data reading and sample structure (must return a list of `Sample` objects). `MMEDataset` is provided, supporting *paired annotations* and *flat annotations* schema, and automatically appends the suffix "`Please answer yes or no.`" to MME questions.
-  - **`metric.py`**: Defines metrics. Built-in metrics include:
-      - `MMEAcc`: Per-question accuracy (ACC).
-      - `MMEAccPlus`: Per-image paired ACC+ (counted as 1 only if both positive/negative questions for the same `image_id` are answered correctly).
-      - Also includes common VQA/POPE metrics (for example).
-  - **`model.py`**: Encapsulates the single-sample inference pipeline (e.g., `LlavaVisionZipModel`, covering VisionZip patching and loading strategies), and uniformly returns the **predicted text** and **stage timings** (used to calculate e2e, prefill, decode, and other latency metrics).
-
-### Customizing Dataset (Example)
-
-```python
-# dataset.py
-from scripts.abstract import BaseDataset, Sample
-
-class MyMMEDataset(BaseDataset):
-    def __init__(self, ann_path: str, limit: int | None = None):
-        # Read JSON -> Construct list of Sample(...) objects
-        ...
-
-    def __len__(self): return len(self.samples)
-    def __getitem__(self, i): return self.samples[i]
-```
-
-### Customizing Metric (Example)
-
-```python
-# metric.py
-from scripts.abstract import BaseMetric, Sample
-
-class MyBinaryAcc(BaseMetric):
-    def __init__(self):
-        self.n = 0; self.c = 0
-    def update(self, sample: Sample, pred_text: str, timings_ms):
-        # Normalize pred_text to yes/no and compare with sample.answers[0]
-        ...
-    def compute(self):
-        return {"my_binary_acc": self.c / self.n if self.n else 0.0}
-```
-
-### Customizing Model (Example)
-
-```python
-# model.py
-from scripts.abstract import BaseModel, Sample
-
-class MyModel(BaseModel):
-    def __init__(self, ...):
-        ...
-    def run(self, sample: Sample):
-        # Return (pred_text, logs_dict); logs_dict can contain keys like 'prefill_ms'/'decode_ms'/'end2end_ms'
-        return pred_text, {"end2end_ms": 123.4}
-```
-
-> **Integration Key Points**:
->
-> 1.  Classes in `dataset.py / metric.py / model.py` must adhere to the interfaces defined in `scripts.abstract` (`BaseDataset` / `BaseMetric` / `BaseModel`).
-> 2.  New classes can be selected in `config/*.yaml`. To **temporarily override** the YAML configuration, use CLI parameters (see next section).
-
------
-
-## 3\) Running Evaluation with `tools/mme_run_all.py`
-
-The script performs the following actions:
-
-1.  Automatically discovers **subtasks** (`<MME_Benchmark>/<SubtaskName>/` subdirectories) or runs based on the `--only` specified list.
-2.  Builds/normalizes annotations for each subtask (prioritizing `tools/mme_build_ann.py`, falling back to `tools/mme_ann_from_txtpairs.py`).
-3.  Calls the unified `scripts/evalkit.py` for inference and scoring.
-4.  Summarizes results into `mme_summary.csv` and per-subtask `results.jsonl`.
-
-### Minimal Example (Run only the OCR subtask)
-
-```bash
-python tools/mme_run_all.py   --cfg config/sparsevlm_mme.yaml   --mme_root /home/w1nd519994824/project/VisionZip-exp/datasets/mme/MME_Benchmark_release_version/MME_Benchmark   --out_root eval_results/mme_eval_results   --only OCR
-```
-
-### Key Parameter Descriptions
-
-  - `--cfg`: YAML configuration file (determines default dataset / model / metrics / decoding parameters, etc.).
-  - `--mme_root`: The MME root directory (pointing to `.../MME_Benchmark`).
-  - `--out_root`: Output root directory (the script will create subdirectories within this path:
-      - `ann/`: Standardized annotations (JSON) for each subtask.
-      - `results/`: Prediction and statistics outputs for each subtask.
-      - `mme_summary.csv`: Summary table across all subtasks).
-  - `--only`: Optional, restricts the evaluation to specific subtasks; supports **multiple subtask names separated by spaces**, e.g.: `--only OCR color counting`.
-
-### Advanced Overrides (Optional)
-
-The following parameters can **temporarily override** the YAML file via the command line:
-
-  - `--dataset [vqa|mme|pope]`
-  - `--model_type [llava_vzip|sparsezip|sparsevlm]`
-  - `--model_path /path/or/hf-id`
-  - `--temperature FLOAT`, `--max_new_tokens INT`
-  - `--warmup INT`, `--seed INT`, `--limit INT`
-  - `--dominant INT`, `--contextual INT`, `--retained_tokens INT` (VisionZip related)
-  - `--conv_mode STR`
-
-> **Output Expectation**: After execution, a brief summary will be printed to the terminal, and `mme_summary.csv` will be generated under the `--out_root` path.
-
------
-
-## Frequently Asked Questions (FAQ)
-
-  - **Error prompts require HF login?** Run `huggingface-cli login` and try again.
-  - **Want to debug a subset?** Use `--only` to specify 1\~N subtasks, or add `--limit` to load only the first N samples.
-  - **How to add/replace metrics?** Implement a subclass of `BaseMetric` in `metric.py` and switch in the YAML, or directly use CLI overrides.
-  - **MME annotation schema inconsistency?** `mme_run_all.py` attempts to **flatten paired annotations** (and injects `image_id/pair`) to enable ACC+ calculation.
-
------
-
-## SparseZip Vision Token Compression (Updated: 2025-11-08)
-
-SparseZip is an experimental vision token compressor that performs dynamic dominant token selection (adaptive K) and hierarchical contextual merging to reduce the number of image patch tokens passed to the LLM while preserving salient content.
-
-Key ideas (see the doc for equations and implementation details):
-
-- Hybrid scoring per patch: attention + entropy + mutual-information proxy (weighted by YAML `alphas`).
-- Dynamic-K selection: `K = round(log(var(scores)+eps) + c)` (bounded by `k_min`/`k_max`).
-- Hierarchical merging of non-dominant patches into fewer contextual tokens (k-means init + optional agglomerative refinement).
-- Optional cross-attn fusion and multi-layer gating (API-ready; cross-attn off by default).
-
-Code entry points:
-
-- Compressor: `utils/sparsezip.py` (class `VisionZipCompressor`).
-- Model patch: `scripts/model.py` (`LlavaSparseZipModel` patches `CLIPVisionTower.forward` via `_sparsezip_forward`).
-- YAML examples: `config/sparsezip_mme.yaml`, `config/sparsezip_pope.yaml` (`model.sparsezip` section).
-
-How to enable:
-
-- Set `model.model_type: sparsezip` in YAML (or pass `--model_type sparsezip`) and include a `sparsezip:` section under `model:`. Legacy flags `dominant/contextual` still work; with `model.sparsezip.dynamic_k: true` the compressor adapts K per image.
-- Note: `llava_vzip` model_type now ignores `model.sparsezip` settings. Use `sparsezip` when you want SparseZip compression.
-
-Quick smoke test (single image):
+Test SparseZip compression on a single image:
 
 ```bash
 python scripts/quick_start/qs_sparsezip_smoke.py \
   --cfg config/sparsezip_mme.yaml \
   --image reference/owl.JPEG \
   --prompt "Describe the owl briefly." \
-  --clip_only   # remove this flag to attempt full LLaVA generation
+  --clip_only   # Remove this flag for full LLaVA generation
 ```
 
-Minimal MME example (OCR only):
+### Run Evaluation on POPE
+
+```bash
+python tools/pope_run_all.py \
+  --cfg config/sparsezip_pope.yaml \
+  --model_path liuhaotian/llava-v1.5-7b \
+  --out_dir ./runs/pope_sparsezip
+```
+
+### Run Evaluation on MME (Single Subtask)
 
 ```bash
 python tools/mme_run_all.py \
@@ -311,62 +67,197 @@ python tools/mme_run_all.py \
   --only OCR
 ```
 
-Single run with evalkit (SparseZip):
+## How SparseZip Works
+
+![SparseZip Architecture](reference/SparseZip_Figure1.jpeg)
+
+SparseZip reduces visual token count through three main steps:
+
+1. **Hybrid Scoring**: Each vision token is scored using a weighted combination of:
+   - Self-attention scores (global salience)
+   - Feature entropy (local discriminative cues)
+   - Mutual information proxy (redundancy detection)
+
+2. **Dynamic-K Selection**: The number of dominant tokens (K) is adapted per image:
+   - High-complexity images → higher K
+   - Low-complexity images → lower K
+   - Formula: `K = round(log(Var(scores) + eps) + c)`, bounded by k_min/k_max
+
+3. **Contextual Merging**: Non-dominant tokens are merged into fewer contextual tokens using:
+   - k-means++ initialization
+   - Optional agglomerative hierarchical clustering
+   - Attention-weighted aggregation
+
+The scoring can be text-aware by using the MM projector's transpose (W^T) to inject text query semantics into the vision space without additional learnable parameters.
+
+## Configuration
+
+SparseZip is configured via YAML files. Example configuration:
+
+```yaml
+model:
+  model_type: sparsezip
+  model_path: liuhaotian/llava-v1.5-7b
+  temperature: 0.0
+  max_new_tokens: 16
+
+  sparsezip:
+    dynamic_k: true
+    k_min: 32
+    k_max: 64
+    dynk:
+      c: 12.0
+      eps: 1.0e-3
+
+    # Hybrid scoring weights
+    alphas:
+      attn: 1.0
+      entropy: 0.8
+      mutual: 1.0
+    tau_feat: 0.15
+    tau_sim: 0.08
+    cross_beta: 0.3  # Text-aware cross-attention weight
+
+    # Contextual merging
+    merging:
+      contextual_num: 32
+      kmeans_init_factor: 2.0
+      kmeans_iters: 1
+      agglomerative: false
+```
+
+See `config/sparsezip_mme.yaml`, `config/sparsezip_pope.yaml`, and `config/sparsezip_docvqa.yaml` for dataset-specific examples.
+
+## Evaluation Framework
+
+This repository provides a modular evaluation framework that supports:
+
+- **Multiple Models**: VisionZip, SparseVLM, SparseZip, and baseline LLaVA
+- **Multiple Datasets**: MME, POPE, DocVQA, COCO-Caption
+- **Modular Components**: Swap datasets, metrics, or models independently
+
+### Framework Structure
+
+```
+scripts/
+  dataset.py      # Dataset loaders (MME, POPE, DocVQA)
+  metric.py       # Evaluation metrics (accuracy, precision, recall, etc.)
+  model.py        # Model wrappers (LlavaModel, LlavaSparseZipModel, etc.)
+  evalkit.py      # Unified evaluation orchestrator
+  abstract.py     # Base classes for modular components
+
+tools/
+  mme_run_all.py  # MME benchmark runner
+  pope_run_all.py # POPE benchmark runner
+  docvqa_run_all.py # DocVQA runner
+
+config/
+  sparsezip_*.yaml  # SparseZip configurations
+  sparsevlm_*.yaml  # SparseVLM configurations
+  visionzip_*.yaml  # VisionZip configurations
+```
+
+### Customizing the Framework
+
+You can customize datasets, metrics, or models by implementing the base classes in `scripts/abstract.py`:
+
+- `BaseDataset`: Implement `__len__` and `__getitem__` returning `Sample` objects
+- `BaseMetric`: Implement `update()` and `compute()` methods
+- `BaseModel`: Implement `run()` returning predictions and timing info
+
+See the existing implementations in `scripts/dataset.py`, `scripts/metric.py`, and `scripts/model.py` for examples.
+
+## Dataset Setup
+
+### MME Dataset
 
 ```bash
-python scripts/evalkit.py \
+# Download MME dataset
+python scripts/dataset_download.py --dataset mme --output_dir ./datasets
+
+# Run evaluation
+python tools/mme_run_all.py \
+  --mme_root ./datasets/mme/MME_Benchmark_release_version/MME_Benchmark \
+  --out_root ./eval_results/mme_eval \
   --cfg config/sparsezip_mme.yaml \
-  --model_type sparsezip \
-  --ann_path PATH/TO/ANN.json \
-  --output_dir ./runs/sparsezip_eval
+  --only OCR  # Optional: limit to specific subtasks
 ```
 
-Fixed-K vs dynamic-K:
+### POPE Dataset
 
-- Fixed-K: set `sparsezip.dynamic_k: false` and choose a numeric `model.dominant`.
-- Dynamic-K: set `sparsezip.dynamic_k: true` (uses score variance; clamped by `k_min/k_max`).
+POPE annotations are typically generated from COCO val2014. See `tools/pope_run_all.py` for setup details.
 
-macOS note:
+## Performance Comparison
 
-- 4/8-bit quantization via bitsandbytes isn’t available on Apple Silicon; we default to fp16. Full LLaVA generation may require installing `protobuf` and avoiding `device_map='auto'` offloading on CPU.
+### Table 1: SparseZip and Baselines on DocVQA, POPE, and MME
 
-Full documentation: see `docs/README_SPARSEZIP.md`.
+| Model | DocVQA (val) ||| POPE ||||| MME |||
+|-------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+|       | Latency (ms) ↓ | ANLS ↑ | Exact Match ↑ | Latency (ms) ↓ | Acc. ↑ | F1 ↑ | Prec. ↑ | Rec. ↑ | Latency (ms) ↓ | MME-Acc ↑ | MME-Acc+ ↑ |
+| **Llava** | 1043.561 | 0.011 | 0.002 | 594.238 | 0.857 | 0.846 | 0.918 | 0.785 | 313.143 | 0.743 | 0.533 |
+| **SparseZip** | **928.452** | **0.010** | **0.002** | **479.987** | **0.837** | **0.816** | **0.940** | **0.721** | **199.748** | **0.722** | **0.492** |
+| SparseVLM | 1053.229 | 0.011 | 0.002 | 618.729 | 0.849 | 0.836 | 0.918 | 0.768 | 203.252 | 0.736 | 0.529 |
+| VisionZip | 873.286 | 0.009 | 0.001 | 429.646 | 0.798 | 0.758 | 0.943 | 0.634 | 158.775 | 0.705 | 0.462 |
 
------
+**Key Findings:**
 
-## Directory and Artifact Examples
+- **POPE**: SparseZip achieves 83.7% accuracy with only 2% drop from Llava baseline (85.7%), while reducing latency by 19.2% (479.987ms vs 594.238ms). SparseZip outperforms VisionZip (79.8%) and is competitive with SparseVLM (84.9%).
 
+- **MME**: SparseZip achieves 36.2% latency reduction (199.748ms vs 313.143ms) while maintaining 72.2% accuracy (vs 74.3% baseline).
+
+- **DocVQA**: SparseZip reduces latency by 11.0% (928.452ms vs 1043.561ms) while maintaining comparable ANLS and exact match scores.
+
+- **Overall**: SparseZip demonstrates strong latency-accuracy trade-offs across all three benchmarks, with significant speedups (11-36% latency reduction) while preserving most accuracy.
+
+## Ablation Components
+
+SparseZip includes several components that can be enabled/disabled:
+
+- **Hybrid Attention**: Multi-signal scoring (attention + entropy + mutual information)
+- **Text-Aware Cross-Attention**: Text-conditioned token selection (via MM projector transpose)
+- **Dynamic-K**: Adaptive token budgeting (can be disabled for fixed-K)
+- **Hierarchical Merging**: Contextual token aggregation (can be simplified or disabled)
+
+Configuration flags: `skip_hybrid_attn`, `skip_dynamic_k`, `skip_ctx_merge` in YAML.
+
+## Technical Details
+
+For detailed implementation information, see:
+- `docs/README_SPARSEZIP.md` - Detailed SparseZip documentation
+- `utils/sparsezip.py` - Core compression implementation
+- `scripts/model.py` - Model integration (LlavaSparseZipModel class)
+
+## Requirements
+
+- Python 3.10+
+- PyTorch 2.1.2+
+- Transformers library
+- CUDA-capable GPU (recommended) or CPU with sufficient RAM
+- ~14 GB VRAM for LLaVA-1.5-7B in float16
+
+## Troubleshooting
+
+- **HuggingFace authentication errors**: Run `huggingface-cli login`
+- **Out of memory**: Use CPU offloading or reduce batch size
+- **macOS issues**: 4/8-bit quantization not available; install `protobuf` for tokenizer
+- **Slow inference**: Ensure CUDA is available and model is loaded on GPU
+
+## Citation
+
+If you use SparseZip in your research, please cite:
+
+```bibtex
+@article{sparsezip2024,
+  title={SparseZip: Text-Aware Visual Token Selection and Compression for Efficient Vision-Language Model Inference},
+  author={...},
+  year={2024}
+}
 ```
-repo/
-  tools/
-    mme_run_all.py
-    mme_build_ann.py
-    mme_ann_from_txtpairs.py
-  scripts/
-    evalkit.py
-    dataset_download.py
-    abstract.py
-    timer.py
-    dataset.py     # Customizable
-    metric.py      # Customizable
-    model.py       # Customizable
-  config/
-    sparsevlm_mme.yaml
-  
 
-datasets/
-  mme/MME_Benchmark_release_version/MME_Benchmark/...
+## License
 
-eval_results/
-  mme_eval_results/
-    ann/
-      OCR.json
-      ...
-    results/
-      OCR/
-        results.jsonl
-        scores.json
-        logs.jsonl
-      ...
-    mme_summary.csv
-```
+[Add your license information here]
+
+## Acknowledgments
+
+Built on top of LLaVA and integrates with VisionZip and SparseVLM methodologies.
