@@ -51,8 +51,10 @@ python scripts/quick_start/qs_sparsezip_smoke.py \
 ```bash
 python tools/pope_run_all.py \
   --cfg config/sparsezip_pope.yaml \
-  --model_path liuhaotian/llava-v1.5-7b \
-  --out_dir ./runs/pope_sparsezip
+  --pope_root /path/to/pope/annotations \
+  --img_root /path/to/COCO/val2014 \
+  --out_root ./runs/pope_sparsezip \
+  --model_path liuhaotian/llava-v1.5-7b
 ```
 
 ### Run Evaluation on MME (Single Subtask)
@@ -62,7 +64,6 @@ python tools/mme_run_all.py \
   --mme_root /path/to/MME_Benchmark \
   --out_root ./runs/mme_sparsezip \
   --cfg config/sparsezip_mme.yaml \
-  --model_type sparsezip \
   --only OCR
 ```
 
@@ -86,8 +87,6 @@ SparseZip reduces visual token count through three main steps:
    - k-means++ initialization
    - Optional agglomerative hierarchical clustering
    - Attention-weighted aggregation
-
-The scoring can be text-aware by using the MM projector's transpose (W^T) to inject text query semantics into the vision space without additional learnable parameters.
 
 ## Configuration
 
@@ -160,9 +159,9 @@ config/
 
 You can customize datasets, metrics, or models by implementing the base classes in `scripts/abstract.py`:
 
-- `BaseDataset`: Implement `__len__` and `__getitem__` returning `Sample` objects
+- `BaseDataset`: Implement `__len__` and `__iter__` returning `Sample` objects
 - `BaseMetric`: Implement `update()` and `compute()` methods
-- `BaseModel`: Implement `run()` returning predictions and timing info
+- `BaseModel`: Implement `device()`, `prepare_inputs()`, and `generate()` methods
 
 See the existing implementations in `scripts/dataset.py`, `scripts/metric.py`, and `scripts/model.py` for examples.
 
@@ -175,6 +174,7 @@ See the existing implementations in `scripts/dataset.py`, `scripts/metric.py`, a
 python scripts/dataset_download.py --dataset mme --output_dir ./datasets
 
 # Run evaluation
+# Note: --mme_root should point to the directory containing subtask folders (existence/, color/, OCR/, etc.)
 python tools/mme_run_all.py \
   --mme_root ./datasets/mme/MME_Benchmark_release_version/MME_Benchmark \
   --out_root ./eval_results/mme_eval \
