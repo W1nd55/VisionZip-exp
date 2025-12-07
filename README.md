@@ -247,7 +247,7 @@ Need to check with Ben, Alex and Shivam
 
 ## License
 
-This as well, needs to be checked with Ben, Alex and Shivam
+This project is licensed under the Apache License 2.0. see the [LICENSE](./LICENSE) file for details.
 
 ## Acknowledgments
 
