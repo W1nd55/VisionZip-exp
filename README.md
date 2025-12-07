@@ -246,13 +246,16 @@ For detailed implementation information, see:
 If you use this work, please cite:
 
 A. Geppert, Q. Chen, S. Mittal, N. Maheen Aboobacker (2025). SparseZip: Text-Aware Visual Token Selection and Compression for Efficient Vision-Language Model Inference. Version 1. URL: https://github.com/W1nd55/VisionZip-exp
+
+
 BibTeX:
-@misc{sparsezip2025,
-  author = {A. Geppert, Q. Chen, S. Mittal, N. Maheen Aboobacker},
-  title = {SparseZip: Text-Aware Visual Token Selection and Compression for Efficient Vision-Language Model Inference},
-  year = {2025},
-  howpublished = {\\url{https://github.com/W1nd55/VisionZip-exp}},
-  note = {Version 1}
+
+@misc{sparsezip2025,  
+    author = {A. Geppert, Q. Chen, S. Mittal, N. Maheen Aboobacker},  
+    title = {SparseZip: Text-Aware Visual Token Selection and Compression for Efficient Vision-Language Model Inference},  
+    year = {2025},  
+    howpublished = {\\url{https://github.com/W1nd55/VisionZip-exp}},  
+    note = {Version 1}  
 }
 
 ## License
