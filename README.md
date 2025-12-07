@@ -14,7 +14,6 @@ SparseZip is a training-free, plug-and-play vision token compression method for 
 
 ## Features
 
-- **Text-Aware Selection**: Uses MM projector transpose (W^T) to inject text semantics into vision token scoring
 - **Hybrid Scoring**: Combines attention, entropy, and mutual information for richer token importance signals
 - **Dynamic-K Budgeting**: Adapts token retention per image based on information complexity (K = log(Var(scores)) + c)
 - **Hierarchical Merging**: Uses k-means++ and agglomerative clustering to merge non-dominant tokens into contextual representations
