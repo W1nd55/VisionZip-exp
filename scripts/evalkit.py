@@ -12,6 +12,15 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 visionzip_parent_dir = os.path.join(current_dir, os.pardir, 'models/VisionZip')
 if visionzip_parent_dir not in sys.path:
     sys.path.insert(0, os.path.abspath(visionzip_parent_dir))
+# Ensure local LLaVA package is importable when running from the repo root.
+llava_parent_dir = os.path.join(current_dir, os.pardir, 'models/LLaVA')
+if llava_parent_dir not in sys.path:
+    sys.path.insert(0, os.path.abspath(llava_parent_dir))
+
+# # Also make SparseVLMs importable (some runs reference that package directly)
+# sparsevlm_parent_dir = os.path.join(current_dir, os.pardir, 'models/SparseVLMs')
+# if sparsevlm_parent_dir not in sys.path:
+#     sys.path.insert(0, os.path.abspath(sparsevlm_parent_dir))
 
 
 

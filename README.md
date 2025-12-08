@@ -4,6 +4,94 @@
 
 -----
 
+## Quick Start
+
+### Prerequisites
+- **GPU**: NVIDIA A40 or similar (24GB+ VRAM, compute capability 8.6)
+- **CUDA**: 12.1+
+- **Python**: 3.10+
+- **Conda**: Recommended for environment management
+
+### 1. Clone Repository
+```bash
+git clone https://github.com/YOUR_USERNAME/VisionZip-exp.git
+cd VisionZip-exp
+git submodule update --init --recursive
+```
+
+### 2. Create Environment
+```bash
+# Create conda environment
+conda create -n sparsezip python=3.10 -y
+conda activate sparsezip
+
+# Install CUDA toolkit
+conda install -c nvidia cuda-toolkit=12.1 -y
+```
+
+### 3. Install Dependencies
+```bash
+# Install PyTorch and other requirements
+pip install -r requirements.txt
+
+# Install flash-attention (A40 specific)
+export TORCH_CUDA_ARCH_LIST="8.6"
+export FLASH_ATTENTION_SKIP_SM90=1
+pip install "flash-attn==2.5.6" --no-build-isolation --no-cache-dir
+
+# Install LLaVA
+pip install -e models/LLaVA --no-deps
+
+# Install VisionZip (modify setup.py first)
+# Edit models/VisionZip/setup.py:
+#   packages=find_packages(include=["visionzip", "visionzip.*"])
+pip install -e models/VisionZip --no-deps
+```
+
+### 4. Download Datasets
+
+**MME Dataset:**
+```bash
+python scripts/dataset_download.py --dataset mme --output_dir ./datasets
+```
+
+**POPE Dataset:**
+```bash
+# Download COCO val2014 images
+mkdir -p datasets/coco
+cd datasets/coco
+wget http://images.cocodataset.org/zips/val2014.zip
+unzip val2014.zip
+
+# Download POPE annotations
+cd ../
+git clone https://github.com/AoiDragon/POPE.git pope
+```
+
+### 5. Hugging Face Login (Required)
+```bash
+huggingface-cli login
+# Enter your HF token when prompted
+```
+
+### 6. Run Evaluation
+```bash
+bash run.sh
+```
+
+Results will be saved in `results_cross_attention/` directory.
+
+### 7. View Results
+```bash
+# MME results
+cat results_cross_attention/mme_sparsezip/mme_summary.csv
+
+# POPE results
+cat results_cross_attention/pope_sparsezip/pope_summary.csv
+```
+
+-----
+
 ## MME Evaluation README
 
 > Updated: 2025-11-08 06:35
