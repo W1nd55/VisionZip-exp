@@ -14,10 +14,7 @@ results/
 results_cross_attention/
 runs/
 
-# Keep experimentations folder but ignore its contents except README
-experimentations/*
-!experimentations/README.md
-!experimentations/*.md
-!experimentations/*.png
+# Keep experimentations folder local only
+experimentations/
 de/
 eval_results/
