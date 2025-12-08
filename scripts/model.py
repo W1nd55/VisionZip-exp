@@ -273,7 +273,7 @@ class LlavaModel(BaseModel):
         }
         return {"text": text, **timings_ms}
     
-class LlavaSparseZipModel(BaseModel):
+class LlavaSparseZipModel_v1(BaseModel):
     """
     Wrap your existing single-sample pipeline; keep it deterministic & timed.
     """
