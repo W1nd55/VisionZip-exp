@@ -80,9 +80,9 @@ class Evaluator:
                 **timings
             }
             f_jsonl.write(json.dumps(row, ensure_ascii=False) + "\n")
-            f_jsonl.flush() # Force write to disk
             count += 1
-            print(f"[Eval] {count} samples done. Last latency: {timings['end2end_ms']:.2f}ms")
+            if count % 50 == 0:
+                print(f"[Eval] {count} samples done")
 
         f_jsonl.close()
 
