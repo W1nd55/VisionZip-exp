@@ -1,6 +1,23 @@
 __pycache__/
-*.pyc
-logs/
-datasets/
-.vscode/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Evaluation output directories
+eval_pope_debug/
+eval_pope_debug_cpu_cluster/
+eval_pope_optimized/
+eval_results_final/
+outputs_eval/
+results/
+results_cross_attention/
+runs/
+
+# Keep experimentations folder but ignore its contents except README
+experimentations/*
+!experimentations/README.md
+!experimentations/*.md
+!experimentations/*.png
+de/
 eval_results/
